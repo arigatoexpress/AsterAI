@@ -1,0 +1,147 @@
+# GPU-Optimized Configuration for RTX 5070Ti + 16-core AMD
+# Maximum performance configuration for local machine learning
+
+# Hardware Detection
+gpu:
+  enabled: true
+  cuda_version: "12.1"
+  memory_gb: 16  # RTX 5070Ti memory
+  compute_capability: "8.9"  # RTX 5000 series
+
+cpu:
+  cores: 16
+  threads: 32
+  hyperthreading: true
+  memory_gb: 64
+
+# PyTorch GPU Optimization
+torch:
+  enable_cudnn_benchmark: true
+  enable_flash_attention: true
+  enable_tf32: true
+  mixed_precision: true  # Automatic Mixed Precision
+  distributed_backend: "nccl"
+
+# Multi-Core CPU Optimization
+parallelization:
+  num_workers: 16  # Match CPU cores
+  multiprocessing_start_method: "fork"
+  thread_pool_size: 32
+  max_memory_per_worker: "4GB"
+
+# Model Training Optimization
+training:
+  batch_size_per_gpu: 64
+  gradient_accumulation_steps: 4
+  max_grad_norm: 1.0
+  warmup_steps: 1000
+  learning_rate_schedule: "cosine_with_warmup"
+  mixed_precision_dtype: "float16"  # Use FP16 for speed
+
+# Memory Management
+memory:
+  max_model_memory_gb: 12  # Leave 4GB for system
+  cache_size_gb: 8
+  enable_memory_pooling: true
+  enable_gradient_checkpointing: true
+  enable_model_sharding: true
+
+# Data Loading Optimization
+data:
+  num_workers: 8  # For data loading
+  prefetch_factor: 4
+  persistent_workers: true
+  pin_memory: true
+  enable_async_data_loading: true
+
+# Inference Optimization
+inference:
+  batch_size: 128
+  enable_tensorrt: true  # NVIDIA TensorRT for RTX
+  enable_onnx: true
+  enable_torchscript: true
+  cache_models: true
+  model_quantization: "int8"  # Quantize for speed
+
+# Distributed Training (Local Multi-GPU)
+distributed:
+  enabled: false  # Single GPU for now
+  num_gpus: 1
+  master_port: 12355
+  backend: "nccl"
+
+# Performance Monitoring
+monitoring:
+  enable_gpu_monitoring: true
+  enable_memory_profiling: true
+  enable_tensorboard: true
+  log_interval: 10
+  save_interval: 1000
+
+# System Health
+health:
+  max_memory_usage: 0.9  # 90% max memory usage
+  max_gpu_memory_usage: 0.95
+  enable_automatic_gc: true
+  gc_threshold: 0.8
+
+# Emergency Controls
+emergency:
+  max_training_time_hours: 24
+  max_memory_growth_gb: 8
+  enable_emergency_shutdown: true
+  emergency_memory_threshold: 0.95
+
+# Custom Kernels and Optimizations
+kernels:
+  enable_fused_kernels: true
+  enable_kernel_fusion: true
+  enable_custom_cuda_kernels: true
+  enable_sparse_attention: true
+
+# Ray Configuration for Multi-Core
+ray:
+  enabled: true
+  num_cpus: 16
+  num_gpus: 1
+  object_store_memory: "8GB"
+  enable_plasma_store: true
+  enable_ray_tune: true
+
+# RAPIDS Configuration (GPU DataFrames)
+rapids:
+  enabled: true
+  memory_pool_size: "4GB"
+  enable_cudf: true
+  enable_cuml: true
+
+# Trading-Specific Optimizations
+trading:
+  max_concurrent_positions: 20  # Higher for multi-core
+  batch_inference_size: 100
+  enable_vectorized_operations: true
+  enable_parallel_backtesting: true
+  num_backtest_workers: 8
+
+# Hyperparameter Optimization
+optimization:
+  num_trials: 100
+  num_parallel_trials: 8
+  optimization_backend: "optuna"
+  enable_distributed_optimization: true
+
+# Logging and Debugging
+logging:
+  level: "INFO"
+  enable_gpu_logging: true
+  enable_memory_logging: true
+  log_tensor_shapes: false
+  log_gradient_norms: true
+
+# Development Mode
+development:
+  enable_debug_mode: false
+  enable_profiling: true
+  enable_tracebacks: true
+  save_checkpoints: true
+  checkpoint_interval: 1000

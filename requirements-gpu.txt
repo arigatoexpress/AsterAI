@@ -1,0 +1,128 @@
+# High-Performance GPU-Optimized Requirements for RTX 5070Ti + 16-core AMD
+# Optimized for maximum performance on high-end local hardware
+
+# Core dependencies (Python 3.12+ for PyTorch compatibility)
+numpy>=1.23.2,<2.0
+pandas>=2.0.0
+requests>=2.31.0
+websockets>=12.0
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+python-dotenv>=1.0.0
+
+# Async and HTTP
+aiohttp>=3.9.0
+
+# Dashboard (professional monitoring)
+streamlit>=1.28.0
+plotly>=5.17.0
+
+# Security and cryptography
+cryptography>=41.0.0
+
+# Data visualization
+matplotlib>=3.7.0
+
+# Web3 for DeFi integrations
+web3>=6.0.0
+
+# High-Performance AI/ML Dependencies (GPU-optimized)
+# Install PyTorch with CUDA support for RTX 5070Ti
+torch>=2.0.0+cu121 --index-url https://download.pytorch.org/whl/cu121
+torchvision>=0.15.0+cu121 --index-url https://download.pytorch.org/whl/cu121
+torchaudio>=2.0.0+cu121 --index-url https://download.pytorch.org/whl/cu121
+
+# GPU-accelerated ML libraries
+torch-optimizer>=0.3.0  # Better optimizers for GPU training
+torch-cuda-toolkit>=11.8  # CUDA toolkit for RTX 5070Ti
+
+# Advanced ML libraries
+transformers>=4.30.0
+stable-baselines3>=2.0.0
+gymnasium>=0.29.0
+ray[rllib]>=2.6.0
+
+# Traditional ML (with GPU acceleration where possible)
+scikit-learn>=1.3.0
+xgboost>=1.7.0  # Supports GPU acceleration
+lightgbm>=4.0.0  # GPU support available
+catboost>=1.2.0  # GPU acceleration
+
+# High-performance optimization libraries
+scipy>=1.11.0
+cvxpy>=1.4.0
+pyportfolioopt>=1.5.0
+
+# GPU-accelerated data processing
+cudf-cu11>=23.10.0  # GPU DataFrame (RAPIDS)
+cuml-cu11>=23.10.0   # GPU ML algorithms (RAPIDS)
+dask>=2023.12.0      # Distributed computing for multi-core
+
+# Advanced optimization
+optuna>=3.5.0        # Hyperparameter optimization (distributed)
+hyperopt>=0.2.7      # Bayesian optimization (parallel)
+scikit-optimize>=0.9.0  # Gaussian process optimization
+
+# Database and Cloud (for data pipeline)
+google-cloud-bigquery>=3.13.0
+google-cloud-pubsub>=2.18.0
+google-cloud-storage>=2.10.0
+google-cloud-secret-manager>=2.16.0
+google-cloud-aiplatform>=1.35.0
+
+# Time Series and Statistics (GPU-accelerated versions)
+statsmodels>=0.14.0
+arch>=6.0.0
+ta-lib>=0.4.25
+
+# API Rate Limiting and Resilience
+ratelimit>=2.2.1
+tenacity>=8.2.0
+
+# High-performance logging and monitoring
+loguru>=0.7.0
+prometheus-client>=0.17.0
+
+# Multi-core processing and parallelization
+joblib>=1.3.0        # Parallel execution
+multiprocess>=0.70.0 # Multi-core processing
+threadpoolctl>=3.2.0 # Thread pool control
+
+# GPU memory management and optimization
+gpustat>=1.1.0       # GPU monitoring
+pynvml>=11.5.0       # NVIDIA GPU management
+memory-profiler>=0.61.0  # Memory profiling
+
+# Performance profiling and optimization
+cProfile>=0.1.0
+line-profiler>=4.1.0
+py-spy>=0.3.0       # Python profiler
+
+# Testing and Validation
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+pytest-benchmark>=4.0.0  # Performance benchmarking
+
+# Development Tools
+black>=23.0.0
+isort>=5.12.0
+mypy>=1.5.0
+pre-commit>=3.5.0
+
+# GPU-optimized numerical libraries
+numba>=0.58.0        # JIT compilation for performance
+cupy-cuda11x>=12.2.0 # GPU NumPy alternative
+cucim>=23.10.0       # GPU-accelerated image processing
+
+# Advanced visualization for performance monitoring
+seaborn>=0.12.0
+bokeh>=3.3.0
+plotly-orca>=1.3.0   # Static image export
+
+# Documentation and reporting
+jupyter>=1.0.0
+notebook>=6.5.0
+jupyterlab>=4.0.0
+sphinx>=7.0.0
+sphinx-rtd-theme>=1.3.0
