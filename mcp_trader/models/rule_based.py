@@ -440,3 +440,4 @@ class MultiIndicatorStrategy(BaseTradingModel):
             ))
         
         return signals
+

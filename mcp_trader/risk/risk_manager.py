@@ -519,3 +519,4 @@ class RiskManager:
             'daily_pnl': sum(self.daily_pnl),
             'risk_limits_status': 'OK' if not self.portfolio_history else 'Check Required'
         }
+

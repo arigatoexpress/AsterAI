@@ -328,7 +328,7 @@ class CustomMLP(nn.Module):
 
         self.network = nn.Sequential(*layers)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: np.ndarray) -> np.ndarray:
         return self.network(x)
 
 
@@ -688,3 +688,4 @@ class EnsembleRLAgent:
         ensemble_metrics['ensemble_improvement'] = ensemble_metrics.get('sharpe_ratio', 0) * 0.05  # Small boost
 
         return ensemble_metrics
+

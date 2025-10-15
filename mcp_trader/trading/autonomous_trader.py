@@ -491,3 +491,4 @@ class AutonomousTrader:
         # Execute
         await self._execute_single_decision(decision)
         logger.info(f"Manual {side.value} executed: {symbol} {quantity}")
+

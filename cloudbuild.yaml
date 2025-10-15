@@ -1,0 +1,242 @@
+# Cloud Build CI/CD Pipeline for HFT Aster Trader
+# Implements MLOps workflow: Local training → Model registry → Optimization → Deployment
+
+steps:
+  # Step 1: Run unit tests
+  - name: 'python:3.12'
+    id: 'run-tests'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        pip install -r requirements.txt
+        python -m pytest tests/ -v --tb=short --junitxml=test_results.xml
+    timeout: '600s'
+
+  # Step 2: Lint and format code
+  - name: 'python:3.12'
+    id: 'lint-code'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        pip install black isort mypy
+        black --check --diff .
+        isort --check-only --diff .
+        mypy . --ignore-missing-imports
+    timeout: '300s'
+    waitFor: ['run-tests']
+
+  # Step 3: Build sentiment analyzer image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-sentiment-image'
+    args:
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/hft-images/sentiment-analyzer:${SHORT_SHA}'
+      - '-f'
+      - 'Dockerfile.sentiment'
+      - '.'
+    timeout: '1800s'
+    waitFor: ['lint-code']
+
+  # Step 4: Push sentiment analyzer image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-sentiment-image'
+    args:
+      - 'push'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/hft-images/sentiment-analyzer:${SHORT_SHA}'
+    timeout: '600s'
+    waitFor: ['build-sentiment-image']
+
+  # Step 5: Build HFT trader image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-trader-image'
+    args:
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/hft-images/hft-aster-trader:${SHORT_SHA}'
+      - '-f'
+      - 'Dockerfile.gpu'
+      - '.'
+    timeout: '2400s'  # Longer timeout for GPU-enabled build
+    waitFor: ['lint-code']
+
+  # Step 6: Push HFT trader image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-trader-image'
+    args:
+      - 'push'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/hft-images/hft-aster-trader:${SHORT_SHA}'
+    timeout: '600s'
+    waitFor: ['build-trader-image']
+
+  # Step 7: Tag images as latest
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'tag-latest-images'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        docker pull ${_REGION}-docker.pkg.dev/${PROJECT_ID}/hft-images/sentiment-analyzer:${SHORT_SHA}
+        docker tag ${_REGION}-docker.pkg.dev/${PROJECT_ID}/hft-images/sentiment-analyzer:${SHORT_SHA} ${_REGION}-docker.pkg.dev/${PROJECT_ID}/hft-images/sentiment-analyzer:latest
+        docker push ${_REGION}-docker.pkg.dev/${PROJECT_ID}/hft-images/sentiment-analyzer:latest
+
+        docker pull ${_REGION}-docker.pkg.dev/${PROJECT_ID}/hft-images/hft-aster-trader:${SHORT_SHA}
+        docker tag ${_REGION}-docker.pkg.dev/${PROJECT_ID}/hft-images/hft-aster-trader:${SHORT_SHA} ${_REGION}-docker.pkg.dev/${PROJECT_ID}/hft-images/hft-aster-trader:latest
+        docker push ${_REGION}-docker.pkg.dev/${PROJECT_ID}/hft-images/hft-aster-trader:latest
+    timeout: '600s'
+    waitFor: ['push-sentiment-image', 'push-trader-image']
+
+  # Step 8: Upload models to Vertex AI (if models exist in workspace)
+  - name: 'python:3.12'
+    id: 'upload-models'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        pip install google-cloud-aiplatform
+        python -c "
+        import os
+        from google.cloud import aiplatform
+
+        # Initialize Vertex AI
+        aiplatform.init(project='${PROJECT_ID}', location='${_REGION}')
+
+        # Check for PyTorch models
+        pytorch_models = []
+        for root, dirs, files in os.walk('.'):
+            for file in files:
+                if file.endswith('.pth') or file.endswith('.pt'):
+                    pytorch_models.append(os.path.join(root, file))
+
+        if pytorch_models:
+            print(f'Found {len(pytorch_models)} PyTorch models')
+            for model_path in pytorch_models:
+                model = aiplatform.Model.upload(
+                    display_name=os.path.basename(model_path).replace('.pth', ''),
+                    artifact_uri=os.path.dirname(model_path),
+                    serving_container_image_uri='us-docker.pkg.dev/vertex-ai/prediction/pytorch-cpu.1-12:latest',
+                    serving_container_predict_route='/predict',
+                    serving_container_health_route='/health',
+                )
+                print(f'Uploaded model: {model.display_name}')
+        else:
+            print('No PyTorch models found to upload')
+        "
+    timeout: '600s'
+    waitFor: ['tag-latest-images']
+
+  # Step 9: Run TensorRT optimization (if models uploaded)
+  - name: 'python:3.12'
+    id: 'tensorrt-optimization'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        pip install torch tensorrt onnx onnxruntime
+        python -c "
+        from mcp_trader.models.tensorrt_optimizer import optimize_hft_model
+        import os
+
+        # Look for PyTorch models in current directory
+        for file in os.listdir('.'):
+            if file.endswith('.pth'):
+                print(f'Optimizing model: {file}')
+                results = optimize_hft_model(file, 'optimized_models')
+                print(f'Optimization results: {results}')
+                break  # Optimize first model found
+        else:
+            print('No PyTorch models found for optimization')
+        "
+    timeout: '1800s'  # Allow time for TensorRT compilation
+    waitFor: ['upload-models']
+
+  # Step 10: Deploy to GKE
+  - name: 'gcr.io/cloud-builders/gke-deploy'
+    id: 'deploy-to-gke'
+    args:
+      - 'run'
+      - '--filename=cloud_deploy/k8s/'
+      - '--location=${_REGION}'
+      - '--cluster=hft-trading-cluster'
+      - '--wait-timeout=600s'
+    timeout: '900s'
+    waitFor: ['tag-latest-images']
+
+  # Step 11: Run integration tests
+  - name: 'python:3.12'
+    id: 'integration-tests'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        # Wait for deployments to be ready
+        kubectl wait --for=condition=available --timeout=300s deployment/sentiment-analyzer
+        kubectl wait --for=condition=available --timeout=300s deployment/hft-trading-agents
+
+        # Test API endpoints
+        SENTIMENT_IP=$(kubectl get svc sentiment-service -o jsonpath='{.spec.clusterIP}')
+        TRADER_IP=$(kubectl get svc hft-trading-service -o jsonpath='{.spec.clusterIP}')
+
+        # Test sentiment service health
+        if curl -f http://${SENTIMENT_IP}:8081/health; then
+            echo "Sentiment service health check passed"
+        else
+            echo "Sentiment service health check failed"
+            exit 1
+        fi
+
+        # Test trader service health
+        if curl -f http://${TRADER_IP}:8080/health; then
+            echo "Trader service health check passed"
+        else
+            echo "Trader service health check failed"
+            exit 1
+        fi
+    timeout: '600s'
+    waitFor: ['deploy-to-gke']
+
+# Build triggers
+triggers:
+  - name: hft-deploy-trigger
+    description: 'Deploy HFT system on push to main'
+    github:
+      owner: '${_GITHUB_OWNER}'
+      name: '${_GITHUB_REPO}'
+      push:
+        branch: 'main'
+
+# Build timeout
+timeout: '3600s'  # 1 hour total
+
+# Environment variables
+substitutions:
+  _REGION: 'us-east1'
+  _GITHUB_OWNER: '${_GITHUB_OWNER}'  # Set in trigger
+  _GITHUB_REPO: '${_GITHUB_REPO}'    # Set in trigger
+
+# Store artifacts
+artifacts:
+  objects:
+    location: 'gs://${PROJECT_ID}-build-artifacts/${BUILD_ID}/'
+    paths:
+      - 'test_results.xml'
+      - 'optimized_models/**/*'
+
+# Build logs
+logsBucket: 'gs://${PROJECT_ID}-build-logs'
+
+# Build notifications (optional)
+# notifications:
+#   - filter: build.status in (SUCCESS, FAILURE)
+#     httpTarget:
+#       url: 'https://your-webhook-url.com'
+#       headers:
+#         Content-Type: 'application/json'
+#       body: |
+#         {
+#           "build_id": "$BUILD_ID",
+#           "status": "$STATUS",
+#           "project_id": "$PROJECT_ID"
+#         }

@@ -1,0 +1,14 @@
+# Requirements for Gemini Sentiment Analyzer Service
+
+# Google Cloud libraries
+google-cloud-pubsub>=2.18.0
+google-generativeai>=0.3.0
+
+# Async libraries
+asyncio-mqtt>=0.13.0
+
+# Logging and utilities
+structlog>=23.1.0
+
+# Optional: News API client (uncomment if using real news API)
+# newsapi-python>=0.2.7

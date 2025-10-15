@@ -1,26 +1,34 @@
 #!/usr/bin/env python3
 """
-Adaptive AI Trading Agent for Aster DEX - Current Era Learning Focus
+HFT Aster Trader - Ultra-Low Latency Trading System
 
-This system learns EXCLUSIVELY from current market conditions (2024-present).
-NO historical backtesting - adapts to the current volatile bull market era only.
+MISSION: Transform $50 into $500k through High-Frequency Trading on Aster DEX
 
-Key Features:
-- Zero historical data dependency - learns from NOW onwards
-- Continuous real-time adaptation to current market regime
-- Advanced strategies optimized for present market conditions
-- Goal: $1M by end of 2026 through autonomous current-era adaptation
+SYSTEM ARCHITECTURE:
+1. LOCAL DEVELOPMENT ENVIRONMENT (RTX 5070Ti Optimized)
+   - Real-time data analysis and strategy development
+   - GPU-accelerated backtesting and simulation
+   - ML model training and optimization
 
-Current Era Strategies:
-1. Barbell Portfolio: BTC/ETH stability + altcoin asymmetric opportunities
-2. Asymmetric Bets: Current volatility exploitation with limited downside
-3. Tail Risk Hedging: Protection against present market crash scenarios
+2. CLOUD AUTONOMOUS TRADER
+   - Ultra-low latency order execution
+   - Real-time market making and arbitrage
+   - Risk management and position control
+   - 24/7 autonomous operation
 
-Real-Time Learning (Current Era Only):
-- Online machine learning from live market data
-- Market regime detection for current conditions
-- Strategy weight optimization based on live performance
-- Continuous model updates from current streaming data
+HFT STRATEGIES:
+1. Statistical Arbitrage: Cross-aster asset price inefficiencies
+2. Market Making: Provide liquidity with tight spreads
+3. Momentum Trading: Sub-millisecond momentum capture
+4. Order Flow Analysis: Institutional flow prediction
+5. Latency Arbitrage: Speed-based edge exploitation
+
+TECHNICAL EDGE:
+- RTX 5070Ti GPU acceleration (16GB VRAM, 4th Gen Tensor Cores)
+- Ultra-low latency data feeds (sub-1ms processing)
+- Co-located infrastructure optimization
+- Advanced ML models (Transformers, LSTMs, GANs)
+- Real-time feature engineering and prediction
 """
 
 import asyncio
@@ -34,35 +42,37 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from mcp_trader.ai.adaptive_trading_agent import AdaptiveTradingAgent, AdaptiveAgentConfig
-from mcp_trader.ai.online_learning import OnlineLearningSystem, AdaptiveStrategyManager
+try:
+    from mcp_trader.ai.hft_trading_agent import HFTTradingAgent, HFTAgentConfig
+    from mcp_trader.ai.hft_learning import HFTLearningSystem, HFTStrategyManager
+except ImportError:
+    logger.warning("HFT modules not found, falling back to adaptive trading")
+    from mcp_trader.ai.adaptive_trading_agent import AdaptiveTradingAgent, AdaptiveAgentConfig
+    from mcp_trader.ai.online_learning import OnlineLearningSystem, AdaptiveStrategyManager
+    HFTTradingAgent = AdaptiveTradingAgent
+    HFTAgentConfig = AdaptiveAgentConfig
+    HFTLearningSystem = OnlineLearningSystem
+    HFTStrategyManager = AdaptiveStrategyManager
 from mcp_trader.config import get_settings
 from mcp_trader.security.secrets import get_secret_manager
 from mcp_trader.trading.types import PortfolioState, MarketState
+from mcp_trader.logging_utils import get_logger
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('adaptive_trader.log'),
-        logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger(__name__)
+# Configure structured logging
+logger = get_logger("adaptive_trader")
 
 
-class AdaptiveTradingSystem:
+class HFTAsterTrader:
     """
-    Complete adaptive trading system integrating AI learning,
-    strategy optimization, and autonomous execution.
+    Ultra-Low Latency HFT Trading System for Aster DEX
+    Optimized for transforming $50 into $500k through high-frequency trading
     """
 
-    def __init__(self, initial_balance: float = 10000.0):
+    def __init__(self, initial_balance: float = 50.0):
         self.initial_balance = initial_balance
-        self.agent: AdaptiveTradingAgent = None
-        self.learning_system: OnlineLearningSystem = None
-        self.strategy_manager: AdaptiveStrategyManager = None
+        self.agent: HFTTradingAgent = None
+        self.learning_system: HFTLearningSystem = None
+        self.strategy_manager: HFTStrategyManager = None
         self.running = False
         self.start_time = None
         self.performance_log = []
@@ -78,185 +88,199 @@ class AdaptiveTradingSystem:
         signal.signal(signal.SIGINT, self.signal_handler)
         signal.signal(signal.SIGTERM, self.signal_handler)
 
+
+class DegenTradingSystem:
+    """
+    High-Risk, High-Reward Degen Trading System for Aster DEX
+    Optimized for social sentiment and meme coin trading
+    """
+
+    def __init__(self, initial_balance: float = 10.0):  # Smaller default for degen
+        self.initial_balance = initial_balance
+        self.agent = None
+        self.running = False
+        self.start_time = None
+        self.performance_log = []
+
+        # Degen-specific metrics
+        self.total_trades = 0
+        self.winning_trades = 0
+        self.total_pnl = 0.0
+        self.peak_balance = initial_balance
+        self.max_drawdown = 0.0
+        self.daily_pnl = 0.0
+        self.consecutive_losses = 0
+
+        # Setup signal handlers
+        signal.signal(signal.SIGINT, self.signal_handler)
+        signal.signal(signal.SIGTERM, self.signal_handler)
+
     async def initialize(self):
-        """Initialize all system components."""
-        logger.info("🚀 Initializing Adaptive AI Trading System")
-        logger.info(f"🎯 Target: $1M by end of 2026 through autonomous crypto trading")
+        """Initialize degen trading system."""
+        logger.info("🎲 Initializing Degen Trading System")
+        logger.info("🎯 Target: High-risk, high-reward (200-500% monthly)")
+        logger.info("⚠️  HIGH RISK MODE - Monitor closely!")
 
         try:
-            # Check if we should run in demo mode (no real API calls)
+            # Check demo mode
             demo_mode = os.getenv('DEMO_MODE', 'false').lower() == 'true'
 
             if demo_mode:
-                logger.info("🎭 Running in DEMO MODE - No real API calls will be made")
+                logger.info("🎭 Running in DEMO MODE - No real API calls")
                 self.demo_mode = True
             else:
                 try:
-                    # Try to load secrets for real trading
                     sm = get_secret_manager()
                     sm.load_secrets_from_file()
-                    logger.info("✅ API credentials loaded")
+                    logger.info("✅ API credentials loaded for degen trading")
 
-                    # Quick test of API keys
                     settings = get_settings()
                     if hasattr(settings, 'aster_api_key') and settings.aster_api_key:
-                        # Test API connectivity
                         from mcp_trader.execution.aster_client import AsterClient
                         test_client = AsterClient(settings.aster_api_key, settings.aster_api_secret)
                         connectivity = await test_client.test_connectivity()
                         if not connectivity:
-                            logger.warning("⚠️  API connectivity test failed - falling back to demo mode")
+                            logger.warning("⚠️  API connectivity test failed - demo mode")
                             self.demo_mode = True
                         else:
                             self.demo_mode = False
                             logger.info("✅ API connectivity confirmed")
                     else:
-                        logger.warning("⚠️  No API keys found - falling back to demo mode")
+                        logger.warning("⚠️  No API keys found - demo mode")
                         self.demo_mode = True
 
                 except Exception as api_error:
-                    logger.warning(f"⚠️  API setup failed: {api_error} - falling back to demo mode")
-                    logger.info("💡 To use real trading, update API keys with: python3 update_api_keys.py")
+                    logger.warning(f"⚠️  API setup failed: {api_error} - demo mode")
                     self.demo_mode = True
 
-            # Initialize online learning system
-            self.learning_system = OnlineLearningSystem()
-            logger.info("✅ Online learning system initialized")
+            # Initialize degen trading agent
+            from mcp_trader.ai.degen_trading_agent import DegenTradingAgent
+            self.agent = DegenTradingAgent({
+                'initial_balance': self.initial_balance,
+                'max_daily_loss': float(os.getenv('MAX_DAILY_LOSS', '5.0')),
+                'target_daily_return': float(os.getenv('TARGET_DAILY_RETURN', '0.05')),
+                'gcp_project_id': os.getenv('GCP_PROJECT_ID', 'hft-aster-trader'),
+            })
 
-            # Initialize strategy manager
-            self.strategy_manager = AdaptiveStrategyManager(self.learning_system)
-            logger.info("✅ Strategy manager initialized")
-
-            # Configure trading agent for volatile bull market
-            config = AdaptiveAgentConfig(
-                initial_balance=self.initial_balance,
-                max_allocation_per_trade=0.15,  # Higher allocation in bull markets
-                risk_tolerance=0.20,  # Higher risk tolerance for bull market
-                volatility_threshold=0.04,  # Higher volatility threshold
-                learning_rate=0.05,  # Faster learning adaptation
-                rebalance_frequency_minutes=15,  # More frequent rebalancing
-                min_allocation_per_trade=0.005,  # Lower minimum for small bets
-                profit_taking_threshold=0.08,  # Higher profit taking in bull market
-                stop_loss_threshold=0.04  # Tighter stops for volatile market
-            )
-
-            # Initialize trading agent
-            self.agent = AdaptiveTradingAgent(config)
-            if not self.demo_mode:
-                await self.agent.initialize()
-                logger.info("✅ Adaptive trading agent initialized (LIVE MODE)")
-            else:
-                # Initialize without API connection for demo
-                self.agent.portfolio_state = PortfolioState(
-                    timestamp=datetime.now(),
-                    total_balance=config.initial_balance,
-                    available_balance=config.initial_balance
-                )
-                logger.info("✅ Adaptive trading agent initialized (DEMO MODE)")
-
-            if self.demo_mode:
-                logger.info("🎭 DEMO MODE ACTIVE: System will simulate trading without real API calls")
-                logger.info("💡 This allows you to see the AI learning and dashboard functionality")
-            else:
-                logger.info("🔥 LIVE MODE ACTIVE: System connected to Aster DEX for real trading")
-
-            logger.info("🎉 All systems initialized and ready for autonomous trading!")
+            logger.info("✅ Degen trading agent initialized")
 
         except Exception as e:
-            logger.error(f"❌ Initialization failed: {e}")
+            logger.error(f"❌ Degen system initialization failed: {e}")
             raise
 
+    def print_startup_banner(self):
+        """Print degen trading startup banner."""
+        print("="*80)
+        print("🎲 DEGEN TRADING AGENT - HIGH RISK HIGH REWARD")
+        print("="*80)
+        print(f"💰 INITIAL BALANCE: ${self.initial_balance}")
+        print("🎯 TARGET: 200-500% monthly returns through social sentiment trading")
+        print("📊 STRATEGIES: Social momentum, meme coin pumps, viral arbitrage")
+        print("⚠️  RISK PROFILE: EXTREME - Use only risk capital")
+        print("🔍 FOCUS: Aster DEX assets, memecoins, social-driven opportunities")
+        print("🚀 FEATURES: Real-time sentiment analysis, social data mining")
+        print("="*80)
+
     async def start_trading(self):
-        """Start the autonomous trading system."""
-        if not self.agent or not self.learning_system:
-            raise RuntimeError("System not properly initialized")
+        """Start degen trading operations."""
+        logger.info("🎲 Starting degen trading operations...")
 
         self.running = True
         self.start_time = datetime.now()
 
-        logger.info("🟢 Starting autonomous trading system")
-        logger.info(f"💰 Initial Balance: ${self.initial_balance:.2f}")
-        logger.info("🎯 Strategies: Barbell Portfolio, Asymmetric Bets, Tail Risk Hedging")
-        logger.info("🔄 Adaptation: Continuous learning and optimization")
-
         try:
+            # Initialize sentiment analysis
+            await self.agent.initialize_sentiment_analysis()
+
+            # Main trading loop
             while self.running:
-                # Update system state
-                await self.update_system_state()
+                try:
+                    await self._trading_cycle()
+                    await asyncio.sleep(1)  # 1-second cycles for degen trading
 
-                # Let agent make trading decisions
-                await self.agent.start_trading()
-
-                # Update learning system with new data
-                await self.update_learning_system()
-
-                # Optimize strategies
-                self.optimize_strategies()
-
-                # Log performance
-                self.log_performance()
-
-                # Brief pause between cycles
-                await asyncio.sleep(60)  # 1 minute cycle
+                except Exception as cycle_error:
+                    logger.error(f"❌ Trading cycle error: {cycle_error}")
+                    await asyncio.sleep(5)
 
         except Exception as e:
-            logger.error(f"❌ Trading system error: {e}")
-            self.running = False
+            logger.error(f"❌ Degen trading failed: {e}")
+        finally:
+            await self.shutdown()
 
-    async def update_system_state(self):
-        """Update overall system state."""
+    async def _trading_cycle(self):
+        """Execute one degen trading cycle."""
         try:
-            # Update portfolio metrics
-            current_balance = self.agent.portfolio_state.total_balance
-            self.peak_balance = max(self.peak_balance, current_balance)
+            # Get market data
+            market_data = await self.agent.get_market_data()
+
+            # Analyze opportunities
+            for symbol_data in market_data:
+                analysis = await self.agent.analyze_market_opportunity(symbol_data)
+                if analysis:
+                    trade = await self.agent.execute_trade_decision(analysis)
+                    if trade:
+                        logger.info(f"🎲 Degen trade executed: {trade}")
+
+            # Update performance
+            self._update_performance()
+
+        except Exception as e:
+            logger.error(f"❌ Degen trading cycle error: {e}")
+
+    def _update_performance(self):
+        """Update performance metrics."""
+        try:
+            current_balance = self.agent.get_current_balance()
+            self.total_pnl = current_balance - self.initial_balance
+
+            # Update peak and drawdown
+            if current_balance > self.peak_balance:
+                self.peak_balance = current_balance
+
             current_drawdown = (self.peak_balance - current_balance) / self.peak_balance
             self.max_drawdown = max(self.max_drawdown, current_drawdown)
 
-            # Count trades
-            for pos_key, position in self.agent.positions.items():
-                if position.current_pnl != 0:  # Position has P&L
-                    self.total_trades += 1
-                    if position.current_pnl > 0:
-                        self.winning_trades += 1
-                    self.total_pnl += position.current_pnl
+            # Log performance every 5 minutes
+            if int((datetime.now() - self.start_time).seconds) % 300 == 0:
+                logger.info(f"📊 Degen Performance: P&L=${self.total_pnl:.2f}, "
+                           f"Drawdown={self.max_drawdown:.1%}")
 
         except Exception as e:
-            logger.error(f"Error updating system state: {e}")
+            logger.error(f"❌ Performance update error: {e}")
 
-    async def update_learning_system(self):
-        """Update the online learning system with current data."""
-        try:
-            if not self.agent.market_state or not self.agent.portfolio_state:
-                return
+    def signal_handler(self, signum, frame):
+        """Handle shutdown signals."""
+        logger.info("🎲 Degen trader received shutdown signal")
+        self.running = False
 
-            # Extract features
-            features = self.learning_system.extract_features(
-                self.agent.market_state,
-                self.agent.portfolio_state,
-                self.agent.market_history[-24:]  # Last 24 observations
-            )
+    async def shutdown(self):
+        """Clean shutdown of degen trading system."""
+        logger.info("🎲 Shutting down degen trading system...")
 
-            # Create training targets (if we have future data)
-            # In real-time, we'd need to wait for future observations
-            # For now, we'll use recent performance as a proxy
+        self.running = False
 
-            recent_performance = {}
-            for strategy_name, strategy in self.agent.strategies.items():
-                perf = strategy.get_recent_performance(hours=1)
-                recent_performance[strategy_name] = perf['avg_pnl']
+        if self.agent:
+            await self.agent.shutdown()
 
-            # Use current market conditions as targets for now
-            targets = {
-                'price_direction': np.mean(list(self.agent.market_state.momentum.values())) if self.agent.market_state.momentum else 0,
-                'volatility': np.mean(list(self.agent.market_state.volatility.values())) if self.agent.market_state.volatility else 0.02,
-                'regime': 1 if self.agent.market_state.regime.value == 'BULL_TREND' else 0
-            }
+        # Log final performance
+        final_balance = self.agent.get_current_balance() if self.agent else self.initial_balance
+        total_return = (final_balance - self.initial_balance) / self.initial_balance
 
-            # Add training sample
-            self.learning_system.add_training_sample(features, targets)
+        logger.info("🎲 Degen Trading Session Complete")
+        logger.info(f"💰 Final Balance: ${final_balance:.2f}")
+        logger.info(f"📈 Total Return: {total_return:.1%}")
+        logger.info(f"📊 Max Drawdown: {self.max_drawdown:.1%}")
+        logger.info("🎲 Remember: Degen trading is extremely risky!")
 
-        except Exception as e:
-            logger.error(f"Error updating learning system: {e}")
+
+class AdaptiveTradingSystem(HFTAsterTrader):
+    """
+    Legacy alias for backward compatibility
+    """
+    pass
+
+
+async def main():
 
     def optimize_strategies(self):
         """Optimize strategy parameters and weights."""
@@ -304,12 +328,12 @@ class AdaptiveTradingSystem:
         total_return = (current_balance - self.initial_balance) / self.initial_balance
         win_rate = self.winning_trades / self.total_trades if self.total_trades > 0 else 0
 
-        # Project to $1M goal
+        # Project to $500k goal
         days_running = runtime.total_seconds() / (24 * 3600)
         if days_running > 0:
             daily_return = (1 + total_return) ** (1 / days_running) - 1
-            days_to_1m = np.log(1000000 / self.initial_balance) / np.log(1 + daily_return) if daily_return > 0 else float('inf')
-            projected_completion = self.start_time + timedelta(days=days_to_1m) if days_to_1m != float('inf') else None
+            days_to_500k = np.log(500000 / self.initial_balance) / np.log(1 + daily_return) if daily_return > 0 else float('inf')
+            projected_completion = self.start_time + timedelta(days=days_to_500k) if days_to_500k != float('inf') else None
         else:
             projected_completion = None
 
@@ -342,9 +366,9 @@ class AdaptiveTradingSystem:
         print(f"🎲 Strategy Weights: {performance_entry['strategy_weights']}")
 
         if projected_completion:
-            print(f"🎯 $1M Projection: {projected_completion.strftime('%Y-%m-%d')} ({days_to_1m:.0f} days)")
+            print(f"🎯 $500k Projection: {projected_completion.strftime('%Y-%m-%d')} ({days_to_500k:.0f} days)")
         else:
-            print("🎯 $1M Projection: More data needed")
+            print("🎯 $500k Projection: More data needed")
 
         print(f"{'='*80}")
 
@@ -415,16 +439,16 @@ class AdaptiveTradingSystem:
             logger.error(f"Error saving performance report: {e}")
 
     def print_startup_banner(self):
-        """Print the startup banner."""
+        """Print the HFT startup banner."""
         print("\n" + "="*80)
-        print("🚀 ADAPTIVE AI TRADING AGENT - CURRENT ERA LEARNING")
+        print("🚀 HFT ASTER TRADER - ULTRA-LOW LATENCY TRADING SYSTEM")
         print("="*80)
-        print("🎯 MISSION: $1M by end of 2026 through autonomous crypto trading")
-        print("🧠 AI: Learns EXCLUSIVELY from current market conditions (2024-present)")
-        print("📊 STRATEGIES: Barbell Portfolio, Asymmetric Bets, Tail Risk Hedging")
-        print("⚡ EXECUTION: Real-time adaptation to CURRENT volatile bull market")
-        print("🔄 LEARNING: Online ML from live data - NO historical backtesting")
-        print("📅 ERA: Current market cycle optimization only")
+        print("🎯 MISSION: $50 → $500k through High-Frequency Trading on Aster DEX")
+        print("🧠 AI: RTX 5070Ti GPU-accelerated ML for sub-millisecond decisions")
+        print("📊 STRATEGIES: Statistical Arbitrage, Market Making, Momentum, Order Flow, Latency Arbitrage")
+        print("⚡ EXECUTION: Ultra-low latency order execution (< 1ms target)")
+        print("🔄 LEARNING: Real-time ML adaptation with continuous GPU training")
+        print("💰 FOCUS: Aster DEX exclusive - no external exchanges")
         print("="*80)
 
 
@@ -432,20 +456,31 @@ async def main():
     """Main entry point for the adaptive trading system."""
     import argparse
 
-    parser = argparse.ArgumentParser(description="Adaptive AI Trading Agent for Aster DEX")
-    parser.add_argument('--balance', type=float, default=10000.0, help='Initial balance')
+    parser = argparse.ArgumentParser(description="HFT Aster Trader - Ultra-Low Latency Trading System")
+    parser.add_argument('--balance', type=float, default=50.0, help='Initial balance (default: $50 for HFT)')
     parser.add_argument('--demo', action='store_true', help='Run in demo mode (simulated trading, no API calls)')
     parser.add_argument('--test-mode', action='store_true', help='Run in test mode (no real trades)')
     parser.add_argument('--max-runtime-hours', type=float, default=None, help='Maximum runtime in hours')
+    parser.add_argument('--agent-type', type=str, default='hft', choices=['hft', 'degen'],
+                       help='Agent type: hft (conservative) or degen (high-risk)')
 
     args = parser.parse_args()
+
+    # Check environment variable for agent type (overrides command line)
+    agent_type = os.getenv('AGENT_TYPE', args.agent_type).lower()
 
     # Set demo mode environment variable
     if args.demo:
         os.environ['DEMO_MODE'] = 'true'
 
-    # Initialize system
-    system = AdaptiveTradingSystem(initial_balance=args.balance)
+    # Initialize appropriate system based on agent type
+    if agent_type == 'degen':
+        from mcp_trader.ai.degen_trading_agent import DegenTradingAgent
+        logger.info("🎲 Initializing Degen Trading Agent (High-Risk Mode)")
+        system = DegenTradingSystem(initial_balance=args.balance)
+    else:
+        logger.info("🚀 Initializing HFT Trading Agent (Conservative Mode)")
+        system = HFTAsterTrader(initial_balance=args.balance)
 
     try:
         system.print_startup_banner()

@@ -140,3 +140,4 @@ PRIORITY_SYMBOLS = [
     "SUIUSDT",
     "PENGUUSDT"
 ]
+

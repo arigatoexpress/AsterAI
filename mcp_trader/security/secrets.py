@@ -278,3 +278,4 @@ def setup_ai_credentials(openai_key: Optional[str] = None,
         sm.set_secret('ANTHROPIC_API_KEY', anthropic_key, encrypt=True)
     
     logger.info("AI API credentials configured securely")
+

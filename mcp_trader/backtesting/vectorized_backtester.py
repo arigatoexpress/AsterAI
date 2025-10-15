@@ -63,3 +63,4 @@ def evaluate_positions(close: pd.Series, positions: pd.Series, fee_bps: float = 
         "total_return": float(equity.iloc[-1] - 1.0),
     }
     return {"returns": strat_returns, "equity": equity, "metrics": metrics}
+

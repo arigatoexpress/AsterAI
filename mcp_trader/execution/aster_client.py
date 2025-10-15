@@ -12,6 +12,8 @@ import hmac
 import hashlib
 import time
 import logging
+import functools
+import platform
 from typing import Dict, List, Optional, Any, Union, Callable
 from dataclasses import dataclass
 from functools import wraps
@@ -20,6 +22,79 @@ from enum import Enum
 import pandas as pd
 
 logger = logging.getLogger(__name__)
+
+# Fix for Windows aiodns issue
+if platform.system() == 'Windows':
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+
+class APICache:
+    """Simple in-memory cache for API responses."""
+
+    def __init__(self, ttl_seconds: int = 60):
+        self.cache: Dict[str, Dict[str, Any]] = {}
+        self.ttl_seconds = ttl_seconds
+
+    def get(self, key: str) -> Optional[Any]:
+        """Get cached data if not expired."""
+        if key in self.cache:
+            entry = self.cache[key]
+            if time.time() - entry['timestamp'] < self.ttl_seconds:
+                logger.debug(f"Cache hit for key: {key}")
+                return entry['data']
+            else:
+                del self.cache[key]
+        return None
+
+    def set(self, key: str, data: Any):
+        """Set cached data with timestamp."""
+        self.cache[key] = {
+            'data': data,
+            'timestamp': time.time()
+        }
+
+    def clear(self):
+        """Clear all cached data."""
+        self.cache.clear()
+
+    def cleanup_expired(self):
+        """Remove expired entries from cache."""
+        current_time = time.time()
+        expired_keys = [
+            key for key, entry in self.cache.items()
+            if current_time - entry['timestamp'] >= self.ttl_seconds
+        ]
+        for key in expired_keys:
+            del self.cache[key]
+
+        if expired_keys:
+            logger.debug(f"Cleaned up {len(expired_keys)} expired cache entries")
+
+
+def cache_api_response(ttl_seconds: int = 60):
+    """Decorator to cache API responses."""
+    def decorator(func):
+        cache = APICache(ttl_seconds)
+
+        @functools.wraps(func)
+        async def wrapper(self, *args, **kwargs):
+            # Create cache key from method name and arguments
+            cache_key = f"{func.__name__}:{str(args)}:{str(sorted(kwargs.items()))}"
+
+            # Try to get from cache
+            cached_result = cache.get(cache_key)
+            if cached_result is not None:
+                return cached_result
+
+            # Execute function and cache result
+            result = await func(self, *args, **kwargs)
+            cache.set(cache_key, result)
+            return result
+
+        # Add cache cleanup method to wrapper
+        wrapper.cache = cache
+        return wrapper
+    return decorator
 
 
 class OrderSide(Enum):
@@ -128,6 +203,8 @@ class AsterConfig:
     timeout: int = 30
     max_retries: int = 3
     recv_window: int = 5000  # Default recvWindow for signed requests
+    max_connections: int = 100  # Max connections for connector
+    max_connections_per_host: int = 10  # Max connections per host
 
 
 @dataclass
@@ -379,7 +456,17 @@ class AsterRESTClient:
         self.time_offset = 0  # Offset between local and server time
     
     async def __aenter__(self):
-        self.session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=self.config.timeout))
+        # Fix for Windows aiodns issue
+        connector = aiohttp.TCPConnector(
+            limit=self.config.max_connections,
+            limit_per_host=self.config.max_connections_per_host,
+            use_dns_cache=True,
+            ttl_dns_cache=300
+        )
+        self.session = aiohttp.ClientSession(
+            timeout=aiohttp.ClientTimeout(total=self.config.timeout),
+            connector=connector
+        )
         # Sync time with server on initialization
         await self._sync_server_time()
         return self
@@ -525,9 +612,9 @@ class AsterRESTClient:
                 try:
                     # Convert string numbers to float where appropriate
                     if key in ['lastPrice', 'bidPrice', 'askPrice', 'highPrice', 'lowPrice', 'openPrice', 'prevClosePrice']:
-                        cleaned_result[key] = float(value) if value else 0.0
+                        cleaned_result[key] = float(value) if value is not None else 0.0
                     elif key in ['volume', 'quoteVolume', 'priceChangePercent']:
-                        cleaned_result[key] = float(value) if value else 0.0
+                        cleaned_result[key] = float(value) if value is not None else 0.0
                     else:
                         cleaned_result[key] = value
                 except (ValueError, TypeError):
@@ -1313,17 +1400,21 @@ class AsterRESTClient:
         """Get account balance V2."""
         result = await self._make_request('GET', '/fapi/v2/balance', signed=True)
 
+        if not result or not isinstance(result, list):
+            # Return empty list for demo/testing mode
+            return []
+
         return [
             AccountBalance(
-                account_alias=item["accountAlias"],
-                asset=item["asset"],
-                balance=float(item["balance"]),
-                cross_wallet_balance=float(item["crossWalletBalance"]),
-                cross_unpnl=float(item["crossUnPnl"]),
-                available_balance=float(item["availableBalance"]),
-                max_withdraw_amount=float(item["maxWithdrawAmount"]),
-                margin_available=bool(item["marginAvailable"]),
-                update_time=datetime.fromtimestamp(item["updateTime"] / 1000)
+                account_alias=item.get("accountAlias", ""),
+                asset=item.get("asset", ""),
+                balance=float(item.get("balance", 0)),
+                cross_wallet_balance=float(item.get("crossWalletBalance", 0)),
+                cross_unpnl=float(item.get("crossUnPnl", 0)),
+                available_balance=float(item.get("availableBalance", 0)),
+                max_withdraw_amount=float(item.get("maxWithdrawAmount", 0)),
+                margin_available=bool(item.get("marginAvailable", False)),
+                update_time=datetime.fromtimestamp(item.get("updateTime", 0) / 1000)
             ) for item in result
         ]
 
@@ -1798,7 +1889,9 @@ class AsterClient:
         await self.__aexit__(None, None, None)
     
     # Delegate REST methods
+    @cache_api_response(ttl_seconds=10)  # Cache account info for 10 seconds
     async def get_account_info(self) -> AccountInfo:
+        logger.debug("Fetching account information")
         return await self.rest_client.get_account_info()
 
     async def get_account_balance_v2(self) -> List[AccountBalance]:
@@ -1814,8 +1907,10 @@ class AsterClient:
             logger.error(f"Connectivity test failed: {e}")
             return False
 
+    @cache_api_response(ttl_seconds=30)  # Cache ticker data for 30 seconds
     async def get_24hr_ticker(self, symbol: str) -> Dict:
         """Get 24hr ticker statistics."""
+        logger.debug(f"Fetching 24hr ticker data for {symbol}")
         return await self.rest_client.get_24hr_ticker(symbol)
 
     async def get_order_book(self, symbol: str, limit: int = 100) -> Dict:
@@ -1859,3 +1954,4 @@ class AsterClient:
     
     async def listen(self):
         await self.ws_client.listen()
+

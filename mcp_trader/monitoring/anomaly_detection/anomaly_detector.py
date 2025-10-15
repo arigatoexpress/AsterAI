@@ -96,13 +96,13 @@ class AutoencoderAnomalyDetector(nn.Module if PYTORCH_AVAILABLE else object):
 
         self.decoder = nn.Sequential(*decoder_layers)
 
-    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """Forward pass through autoencoder."""
         latent = self.encoder(x)
         reconstructed = self.decoder(latent)
         return reconstructed, latent
 
-    def compute_reconstruction_error(self, x: torch.Tensor) -> torch.Tensor:
+    def compute_reconstruction_error(self, x: np.ndarray) -> np.ndarray:
         """Compute reconstruction error for anomaly scoring."""
         reconstructed, _ = self.forward(x)
         error = F.mse_loss(reconstructed, x, reduction='none')
@@ -808,3 +808,4 @@ class SelfHealingSystem:
         # Simple effectiveness metric (can be improved with actual outcome tracking)
         actions_with_expected_outcome = sum(1 for h in healing_history if h.get('expected_outcome'))
         return actions_with_expected_outcome / len(healing_history)
+

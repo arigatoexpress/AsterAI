@@ -234,3 +234,4 @@ class KellyGridStrategy(BaseGridStrategy):
                     ))
         
         return signals
+

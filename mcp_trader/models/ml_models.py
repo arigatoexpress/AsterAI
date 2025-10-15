@@ -278,3 +278,4 @@ class LassoModel(PricePredictionModel):
         }
         super().__init__("Lasso", Lasso, **kwargs)
         self.model = Lasso(**model_params)
+

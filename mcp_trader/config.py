@@ -162,3 +162,4 @@ def get_stable_symbols() -> List[str]:
 def get_grid_trading_symbols() -> List[str]:
     """Get symbols optimal for grid trading."""
     return ["SOLUSDT", "SUIUSDT", "ASTERUSDT"]
+

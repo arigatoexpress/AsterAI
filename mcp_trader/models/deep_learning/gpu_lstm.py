@@ -60,7 +60,7 @@ class FlashAttention(nn.Module):
 
         self.dropout = nn.Dropout(0.05)  # Lower dropout
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: np.ndarray) -> np.ndarray:
         """Flash attention forward pass."""
         batch_size, seq_len, hidden_size = x.size()
 
@@ -144,7 +144,7 @@ class OptimizedLSTM(nn.Module):
             elif 'bias' in name:
                 nn.init.constant_(param, 0)
 
-    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
+    def forward(self, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray, Optional[np.ndarray]]:
         """
         Forward pass with GPU optimizations.
 
@@ -477,8 +477,8 @@ class GPUOptimizedPredictor(BaseMLModel):
             logger.error(f"Error in GPU LSTM training: {e}")
             raise
 
-    def _compute_loss(self, pred: torch.Tensor, uncertainty: torch.Tensor,
-                     volatility: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    def _compute_loss(self, pred: np.ndarray, uncertainty: np.ndarray,
+                     volatility: np.ndarray, target: np.ndarray) -> np.ndarray:
         """Custom loss function with uncertainty weighting."""
         # Main prediction loss (MSE)
         pred_loss = F.mse_loss(pred, target)
@@ -660,3 +660,4 @@ class GPUOptimizedPredictor(BaseMLModel):
             })
 
         return metrics
+

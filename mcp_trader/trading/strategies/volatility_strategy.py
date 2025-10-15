@@ -250,3 +250,4 @@ class VolatilityStrategy:
                 'stop_loss_threshold': self.config.stop_loss_threshold
             }
         }
+

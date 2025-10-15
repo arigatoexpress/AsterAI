@@ -19,3 +19,4 @@ def generate_positions_rsi(data: pd.DataFrame, period: int = 14, low: float = 30
     r = rsi(data["close"], period)
     position = np.where(r < low, 1.0, np.where(r > high, -1.0, 0.0))
     return pd.Series(position, index=data.index)
+

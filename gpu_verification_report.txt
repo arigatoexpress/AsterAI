@@ -1,0 +1,6 @@
+GPU Verification Report
+======================================================================
+
+System: Windows 11
+Python: 3.13.3
+PyTorch: 2.6.0+cpu

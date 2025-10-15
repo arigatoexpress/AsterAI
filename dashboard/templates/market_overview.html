@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AsterAI - Market Overview</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/styles.css" rel="stylesheet">
+    <style>
+        /* Custom styles for market overview */
+        .market-card {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .market-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        }
+
+        .price-display {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .change-positive {
+            color: #28a745 !important;
+        }
+
+        .change-negative {
+            color: #dc3545 !important;
+        }
+
+        .volume-bar {
+            height: 8px;
+            background: linear-gradient(90deg, #28a745, #ffc107, #dc3545);
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+
+        .market-sentiment {
+            position: relative;
+            height: 200px;
+            background: radial-gradient(circle at center, rgba(102, 126, 234, 0.1) 0%, transparent 70%);
+        }
+
+        .fear-greed-gauge {
+            position: relative;
+            width: 200px;
+            height: 100px;
+            background: conic-gradient(from 180deg, #dc3545 0%, #ffc107 50%, #28a745 100%);
+            border-radius: 0 0 100px 100px;
+            margin: 0 auto;
+        }
+
+        .gauge-needle {
+            position: absolute;
+            top: 100px;
+            left: 50%;
+            width: 2px;
+            height: 80px;
+            background: #fff;
+            transform-origin: bottom center;
+            transition: transform 0.5s ease;
+        }
+
+        .mini-chart {
+            height: 120px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .asset-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .news-ticker {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .news-item {
+            display: inline-block;
+            margin-right: 50px;
+            font-size: 0.9rem;
+        }
+
+        .market-heatmap {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin: 20px 0;
+        }
+
+        .heatmap-cell {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            transition: transform 0.2s ease;
+        }
+
+        .heatmap-cell:hover {
+            transform: scale(1.05);
+        }
+
+        .heatmap-positive {
+            background: linear-gradient(135deg, #28a745, #20c997);
+        }
+
+        .heatmap-negative {
+            background: linear-gradient(135deg, #dc3545, #fd7e14);
+        }
+
+        .heatmap-neutral {
+            background: linear-gradient(135deg, #6c757d, #495057);
+        }
+
+        .market-momentum {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .momentum-indicator {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+        }
+
+        .momentum-bar {
+            flex: 1;
+            height: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 0 15px;
+        }
+
+        .momentum-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-chart-line"></i> AsterAI Market Overview
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/">Market Overview</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/ai-learning">AI Learning</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/positions">Positions</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/analytics">Analytics</a>
+                    </li>
+                </ul>
+                <div class="d-flex align-items-center">
+                    <span id="market-time" class="text-light me-3">Loading...</span>
+                    <div id="connection-status" class="badge bg-success me-2">
+                        <i class="fas fa-circle"></i> Connected
+                    </div>
+                    <div id="system-status" class="badge bg-secondary">
+                        <i class="fas fa-cog"></i> Ready
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <!-- Market Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="market-card card text-white">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <h2 class="card-title">
+                                    <i class="fas fa-globe"></i> Global Market Overview
+                                </h2>
+                                <p class="card-text">Real-time market analysis and sentiment tracking</p>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <div class="fear-greed-gauge mb-3">
+                                    <div class="gauge-needle" id="fear-greed-needle"></div>
+                                </div>
+                                <div class="text-center">
+                                    <small class="text-muted">Fear & Greed Index</small>
+                                    <div class="h4 mt-1" id="fear-greed-value">50</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Market Sentiment & News -->
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <div class="card market-card text-white">
+                    <div class="card-header">
+                        <i class="fas fa-brain"></i> Market Sentiment Analysis
+                    </div>
+                    <div class="card-body">
+                        <div class="market-sentiment">
+                            <canvas id="sentiment-chart" width="400" height="200"></canvas>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-4 text-center">
+                                <div class="h5 text-success" id="bullish-count">0</div>
+                                <small class="text-muted">Bullish</small>
+                            </div>
+                            <div class="col-4 text-center">
+                                <div class="h5 text-warning" id="neutral-count">0</div>
+                                <small class="text-muted">Neutral</small>
+                            </div>
+                            <div class="col-4 text-center">
+                                <div class="h5 text-danger" id="bearish-count">0</div>
+                                <small class="text-muted">Bearish</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card market-card text-white">
+                    <div class="card-header">
+                        <i class="fas fa-newspaper"></i> Market News
+                    </div>
+                    <div class="card-body">
+                        <div class="news-ticker">
+                            <div id="news-container">
+                                <div class="news-item">
+                                    <i class="fas fa-circle text-warning me-2"></i>
+                                    Market analysis loading...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Asset Performance Grid -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card market-card text-white">
+                    <div class="card-header">
+                        <i class="fas fa-th"></i> Asset Performance Heatmap
+                    </div>
+                    <div class="card-body">
+                        <div class="market-heatmap" id="asset-heatmap">
+                            <!-- Heatmap cells will be populated here -->
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-4">
+                                <small class="text-success">+2% or more</small>
+                            </div>
+                            <div class="col-4 text-center">
+                                <small class="text-warning">-2% to +2%</small>
+                            </div>
+                            <div class="col-4 text-end">
+                                <small class="text-danger">-2% or less</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Performers & Market Movers -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card market-card text-white">
+                    <div class="card-header">
+                        <i class="fas fa-trophy"></i> Top Performers (24h)
+                    </div>
+                    <div class="card-body">
+                        <div id="top-gainers">
+                            <div class="text-center text-muted">
+                                <div class="loading-spinner mx-auto mb-2"></div>
+                                Loading market data...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card market-card text-white">
+                    <div class="card-header">
+                        <i class="fas fa-chart-line"></i> Market Movers
+                    </div>
+                    <div class="card-body">
+                        <div id="market-movers">
+                            <div class="text-center text-muted">
+                                <div class="loading-spinner mx-auto mb-2"></div>
+                                Loading market data...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Market Momentum & Volume Analysis -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card market-card text-white">
+                    <div class="card-header">
+                        <i class="fas fa-wave-square"></i> Market Momentum Analysis
+                    </div>
+                    <div class="card-body">
+                        <div class="market-momentum">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>Asset Momentum</h6>
+                                    <div id="momentum-indicators">
+                                        <!-- Momentum indicators will be populated here -->
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>Volume Trends</h6>
+                                    <div class="mini-chart">
+                                        <canvas id="volume-chart" width="300" height="100"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Market Statistics Summary -->
+        <div class="row">
+            <div class="col-md-3">
+                <div class="card market-card text-white">
+                    <div class="card-body text-center">
+                        <div class="h4" id="total-market-cap">$0</div>
+                        <small class="text-muted">Total Market Cap</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card market-card text-white">
+                    <div class="card-body text-center">
+                        <div class="h4" id="btc-dominance">0%</div>
+                        <small class="text-muted">BTC Dominance</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card market-card text-white">
+                    <div class="card-body text-center">
+                        <div class="h4" id="total-volume">$0</div>
+                        <small class="text-muted">24h Volume</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card market-card text-white">
+                    <div class="card-body text-center">
+                        <div class="h4" id="active-traders">0</div>
+                        <small class="text-muted">Active Markets</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialize charts and data
+        let sentimentChart = null;
+        let volumeChart = null;
+        let websocket = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCharts();
+            connectWebSocket();
+            loadMarketData();
+            startNewsTicker();
+        });
+
+        function initializeCharts() {
+            // Sentiment chart
+            const sentimentCtx = document.getElementById('sentiment-chart').getContext('2d');
+            sentimentChart = new Chart(sentimentCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Bullish', 'Neutral', 'Bearish'],
+                    datasets: [{
+                        data: [33, 33, 34],
+                        backgroundColor: ['#28a745', '#ffc107', '#dc3545'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // Volume chart
+            const volumeCtx = document.getElementById('volume-chart').getContext('2d');
+            volumeChart = new Chart(volumeCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Volume',
+                        data: [],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { display: false },
+                        y: { display: false }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/live-data`;
+
+            websocket = new WebSocket(wsUrl);
+
+            websocket.onopen = function(event) {
+                console.log('Market overview WebSocket connected');
+                document.getElementById('connection-status').className = 'badge bg-success';
+            };
+
+            websocket.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                updateMarketOverview(data);
+            };
+
+            websocket.onclose = function(event) {
+                console.log('Market overview WebSocket disconnected');
+                document.getElementById('connection-status').className = 'badge bg-danger';
+            };
+        }
+
+        function updateMarketOverview(data) {
+            if (data.market_data) {
+                updateAssetHeatmap(data.market_data);
+                updateTopPerformers(data.market_data);
+            }
+
+            if (data.market_stats) {
+                updateMarketStats(data.market_stats);
+            }
+
+            if (data.sentiment) {
+                updateSentimentData(data.sentiment);
+            }
+
+            if (data.momentum) {
+                updateMomentumIndicators(data.momentum);
+            }
+
+            document.getElementById('market-time').textContent = new Date().toLocaleTimeString();
+        }
+
+        function updateAssetHeatmap(marketData) {
+            const heatmap = document.getElementById('asset-heatmap');
+            heatmap.innerHTML = '';
+
+            Object.entries(marketData).slice(0, 20).forEach(([symbol, data]) => {
+                const cell = document.createElement('div');
+                cell.className = 'heatmap-cell';
+
+                const change = parseFloat(data.price_change_percent || 0);
+
+                if (change > 2) {
+                    cell.classList.add('heatmap-positive');
+                } else if (change < -2) {
+                    cell.classList.add('heatmap-negative');
+                } else {
+                    cell.classList.add('heatmap-neutral');
+                }
+
+                cell.innerHTML = `
+                    <div>
+                        <div class="fw-bold">${symbol}</div>
+                        <small>${change > 0 ? '+' : ''}${change.toFixed(1)}%</small>
+                    </div>
+                `;
+
+                heatmap.appendChild(cell);
+            });
+        }
+
+        function updateTopPerformers(marketData) {
+            const gainersContainer = document.getElementById('top-gainers');
+            const moversContainer = document.getElementById('market-movers');
+
+            const assets = Object.entries(marketData)
+                .filter(([symbol, data]) => data.price && data.price_change_percent)
+                .sort((a, b) => parseFloat(b[1].price_change_percent) - parseFloat(a[1].price_change_percent))
+                .slice(0, 10);
+
+            // Top gainers
+            gainersContainer.innerHTML = assets.slice(0, 5).map(([symbol, data]) => `
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="fw-bold">${symbol}</span>
+                    <span class="change-positive">+${parseFloat(data.price_change_percent).toFixed(2)}%</span>
+                </div>
+            `).join('');
+
+            // Market movers (by volume)
+            const movers = Object.entries(marketData)
+                .filter(([symbol, data]) => data.volume && data.price)
+                .sort((a, b) => parseFloat(b[1].volume) - parseFloat(a[1].volume))
+                .slice(0, 5);
+
+            moversContainer.innerHTML = movers.map(([symbol, data]) => `
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="fw-bold">${symbol}</span>
+                    <span class="text-muted">Vol: $${(parseFloat(data.volume) / 1000000).toFixed(1)}M</span>
+                </div>
+            `).join('');
+        }
+
+        function updateMarketStats(stats) {
+            document.getElementById('total-market-cap').textContent = formatCurrency(stats.total_market_cap || 0);
+            document.getElementById('btc-dominance').textContent = `${(stats.btc_dominance || 0).toFixed(1)}%`;
+            document.getElementById('total-volume').textContent = formatCurrency(stats.total_volume || 0);
+            document.getElementById('active-traders').textContent = stats.active_markets || 0;
+        }
+
+        function updateSentimentData(sentiment) {
+            if (sentiment.distribution) {
+                sentimentChart.data.datasets[0].data = [
+                    sentiment.distribution.bullish || 0,
+                    sentiment.distribution.neutral || 0,
+                    sentiment.distribution.bearish || 0
+                ];
+                sentimentChart.update();
+            }
+
+            document.getElementById('bullish-count').textContent = sentiment.distribution?.bullish || 0;
+            document.getElementById('neutral-count').textContent = sentiment.distribution?.neutral || 0;
+            document.getElementById('bearish-count').textContent = sentiment.distribution?.bearish || 0;
+
+            // Update fear & greed gauge
+            const fearGreedValue = sentiment.fear_greed_index || 50;
+            document.getElementById('fear-greed-value').textContent = fearGreedValue;
+
+            const needleRotation = (fearGreedValue - 50) * 1.8; // Convert 0-100 to -90 to +90 degrees
+            document.getElementById('fear-greed-needle').style.transform = `translateX(-50%) rotate(${needleRotation}deg)`;
+        }
+
+        function updateMomentumIndicators(momentum) {
+            const container = document.getElementById('momentum-indicators');
+            container.innerHTML = '';
+
+            Object.entries(momentum).forEach(([symbol, value]) => {
+                const percentage = Math.max(-100, Math.min(100, value * 100));
+                const isPositive = percentage > 0;
+
+                container.innerHTML += `
+                    <div class="momentum-indicator">
+                        <span class="text-sm">${symbol}</span>
+                        <div class="momentum-bar">
+                            <div class="momentum-fill ${isPositive ? 'bg-success' : 'bg-danger'}"
+                                 style="width: ${Math.abs(percentage)}%"></div>
+                        </div>
+                        <span class="text-sm ${isPositive ? 'text-success' : 'text-danger'}">
+                            ${isPositive ? '+' : ''}${percentage.toFixed(1)}%
+                        </span>
+                    </div>
+                `;
+            });
+        }
+
+        function formatCurrency(value) {
+            if (value >= 1e12) return `$${(value / 1e12).toFixed(2)}T`;
+            if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
+            if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`;
+            return `$${value.toLocaleString()}`;
+        }
+
+        function loadMarketData() {
+            // Load initial market data
+            fetch('/api/market/data')
+                .then(response => response.json())
+                .then(data => updateMarketOverview({market_data: data}))
+                .catch(error => console.error('Error loading market data:', error));
+        }
+
+        function startNewsTicker() {
+            // Simulate news ticker (in real implementation, this would come from WebSocket)
+            const newsItems = [
+                "BTC surges 3% on institutional adoption news",
+                "Federal Reserve signals potential rate cuts",
+                "Ethereum network upgrade completed successfully",
+                "Major DeFi protocol reports record TVL"
+            ];
+
+            const newsContainer = document.getElementById('news-container');
+            let currentNews = 0;
+
+            setInterval(() => {
+                currentNews = (currentNews + 1) % newsItems.length;
+                newsContainer.innerHTML = `
+                    <div class="news-item">
+                        <i class="fas fa-circle text-warning me-2"></i>
+                        ${newsItems[currentNews]}
+                    </div>
+                `;
+            }, 5000);
+        }
+
+        // Auto-refresh every 30 seconds
+        setInterval(loadMarketData, 30000);
+    </script>
+</body>
+
+</html>
+
+

@@ -78,3 +78,4 @@ class TradeExecutor:
         except Exception as e:
             logger.error(f"Market sell failed for {symbol}: {e}")
             raise
+

@@ -396,3 +396,4 @@ class GridStrategy:
 
         logger.info(f"Closed grid for {symbol}")
         return decisions
+

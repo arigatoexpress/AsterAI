@@ -12,8 +12,9 @@ warnings.filterwarnings('ignore')
 from ..execution.aster_client import AsterClient
 from ..config import get_settings, PRIORITY_SYMBOLS
 from ..trading.types import PortfolioState, TradingDecision, MarketRegime
+from ..logging_utils import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -685,3 +686,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+

@@ -71,3 +71,4 @@ def run_ga(
         population = new_pop
 
     return best_ch, best_fit
+

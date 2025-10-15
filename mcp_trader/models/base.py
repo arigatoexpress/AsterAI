@@ -294,3 +294,4 @@ class BaseEnsembleModel(BaseTradingModel):
             ))
         
         return ensemble_predictions
+

@@ -539,3 +539,4 @@ class SentimentIngestionManager:
             data['sources'] = list(data['sources'])
         
         return symbol_sentiment
+

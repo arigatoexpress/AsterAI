@@ -513,3 +513,4 @@ class DMarkIndicator:
             return "LOW_VOLATILITY"
         else:
             return "NORMAL"
+

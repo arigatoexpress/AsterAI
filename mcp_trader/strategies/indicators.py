@@ -22,3 +22,4 @@ def rsi(series: pd.Series, period: int = 14) -> pd.Series:
     rs = roll_up / (roll_down.replace(0, np.nan))
     rsi_val = 100 - (100 / (1 + rs))
     return rsi_val.fillna(method="bfill")
+

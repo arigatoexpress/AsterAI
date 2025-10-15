@@ -432,3 +432,4 @@ class ConfidenceWeightedEnsemble(BaseEnsembleModel):
                     ))
         
         return ensemble_predictions
+

@@ -346,3 +346,4 @@ class VolatilityRiskManager:
         """Trigger emergency risk controls."""
         logger.critical("Emergency risk stop triggered")
         # This would implement circuit breakers, position closures, etc.
+

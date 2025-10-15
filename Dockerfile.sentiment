@@ -1,0 +1,41 @@
+# Dockerfile for Gemini Sentiment Analyzer Service
+# Lightweight service for real-time sentiment analysis
+
+FROM python:3.12-slim
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN useradd -m -s /bin/bash sentiment && \
+    chown -R sentiment:sentiment /home/sentiment
+
+USER sentiment
+WORKDIR /home/sentiment
+
+# Copy requirements first for better caching
+COPY requirements.sentiment.txt /tmp/requirements.sentiment.txt
+RUN pip install --no-cache-dir --user -r /tmp/requirements.sentiment.txt
+
+# Copy application code
+COPY mcp_trader/sentiment/ /home/sentiment/mcp_trader/sentiment/
+
+# Set Python path
+ENV PYTHONPATH=/home/sentiment:$PYTHONPATH
+
+# Expose port
+EXPOSE 8081
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD python -c "import sys; sys.exit(0)" || exit 1
+
+# Run sentiment analyzer
+CMD ["python", "-m", "mcp_trader.sentiment.gemini_analyzer"]

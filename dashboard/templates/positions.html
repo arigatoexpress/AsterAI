@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AsterAI - Positions</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/styles.css" rel="stylesheet">
+    <style>
+        .positions-card {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            border: none;
+            border-radius: 15px;
+        }
+
+        .position-row {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            transition: transform 0.2s ease;
+        }
+
+        .position-row:hover {
+            transform: translateY(-2px);
+            background: rgba(255,255,255,0.1);
+        }
+
+        .pnl-positive {
+            color: #28a745;
+        }
+
+        .pnl-negative {
+            color: #dc3545;
+        }
+
+        .position-controls {
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-list"></i> AsterAI - Positions
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Market Overview</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/ai-learning">AI Learning</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/positions">Positions</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/analytics">Analytics</a>
+                    </li>
+                </ul>
+                <div class="d-flex">
+                    <button id="refresh-positions" class="btn btn-outline-light me-2">
+                        <i class="fas fa-sync"></i> Refresh
+                    </button>
+                    <button id="close-all-positions" class="btn btn-outline-danger">
+                        <i class="fas fa-times-circle"></i> Close All
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <!-- Portfolio Summary -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="positions-card card text-white">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <div class="h3" id="portfolio-value">$0.00</div>
+                                    <small class="text-muted">Portfolio Value</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <div class="h3" id="unrealized-pnl">$0.00</div>
+                                    <small class="text-muted">Unrealized P&L</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <div class="h3" id="day-pnl">$0.00</div>
+                                    <small class="text-muted">Day P&L</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <div class="h3" id="total-positions">0</div>
+                                    <small class="text-muted">Open Positions</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Position Controls -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card positions-card text-white">
+                    <div class="card-header">
+                        <i class="fas fa-gamepad"></i> Position Management
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Risk Management</h6>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Max Position Risk</span>
+                                    <span class="badge bg-warning">15%</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Stop Loss</span>
+                                    <span class="badge bg-danger">-3%</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span>Take Profit</span>
+                                    <span class="badge bg-success">+5%</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Quick Actions</h6>
+                                <div class="position-controls">
+                                    <button class="btn btn-sm btn-outline-light me-2 mb-2">
+                                        <i class="fas fa-plus"></i> Add Position
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-warning me-2 mb-2">
+                                        <i class="fas fa-edit"></i> Modify Risk
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-info mb-2">
+                                        <i class="fas fa-chart-line"></i> View Charts
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Open Positions -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card positions-card text-white">
+                    <div class="card-header">
+                        <i class="fas fa-list"></i> Open Positions
+                    </div>
+                    <div class="card-body">
+                        <div id="positions-container">
+                            <div class="text-center text-muted py-5">
+                                <i class="fas fa-robot fa-3x mb-3"></i>
+                                <h5>No Active Positions</h5>
+                                <p>The AI trading agent will open positions based on market conditions and strategy weights.</p>
+                                <button class="btn btn-primary mt-3">
+                                    <i class="fas fa-play"></i> Start Trading
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Position Performance Chart -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card positions-card text-white">
+                    <div class="card-header">
+                        <i class="fas fa-chart-area"></i> Position Performance
+                    </div>
+                    <div class="card-body">
+                        <canvas id="positions-chart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let positionsChart = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCharts();
+            loadPositionsData();
+
+            // Event listeners
+            document.getElementById('refresh-positions').addEventListener('click', loadPositionsData);
+            document.getElementById('close-all-positions').addEventListener('click', closeAllPositions);
+        });
+
+        function initializeCharts() {
+            const ctx = document.getElementById('positions-chart').getContext('2d');
+            positionsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Portfolio Value',
+                        data: [],
+                        borderColor: '#28a745',
+                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            grid: { color: 'rgba(255,255,255,0.1)' },
+                            ticks: { color: 'white' }
+                        },
+                        x: {
+                            grid: { color: 'rgba(255,255,255,0.1)' },
+                            ticks: { color: 'white' }
+                        }
+                    },
+                    plugins: {
+                        legend: { labels: { color: 'white' } }
+                    }
+                }
+            });
+        }
+
+        function loadPositionsData() {
+            fetch('/api/positions/open')
+                .then(response => response.json())
+                .then(data => updatePositionsDisplay(data))
+                .catch(error => console.error('Error loading positions:', error));
+
+            fetch('/api/portfolio/status')
+                .then(response => response.json())
+                .then(data => updatePortfolioData(data))
+                .catch(error => console.error('Error loading portfolio:', error));
+        }
+
+        function updatePositionsDisplay(data) {
+            const container = document.getElementById('positions-container');
+
+            if (data.positions && Object.keys(data.positions).length > 0) {
+                container.innerHTML = Object.entries(data.positions).map(([symbol, position]) => `
+                    <div class="position-row">
+                        <div class="row align-items-center">
+                            <div class="col-md-3">
+                                <h5 class="mb-1">${symbol}</h5>
+                                <small class="text-muted">${position.side.toUpperCase()} Position</small>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="fw-bold">Size: ${parseFloat(position.size || 0).toFixed(6)}</div>
+                                <small class="text-muted">Quantity</small>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="fw-bold">$${parseFloat(position.entry_price || 0).toFixed(4)}</div>
+                                <small class="text-muted">Entry Price</small>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="fw-bold ${position.unrealized_pnl >= 0 ? 'pnl-positive' : 'pnl-negative'}">
+                                    $${parseFloat(position.unrealized_pnl || 0).toFixed(2)}
+                                </div>
+                                <small class="text-muted">Unrealized P&L</small>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="d-flex">
+                                    <button class="btn btn-sm btn-outline-warning me-2" onclick="modifyPosition('${symbol}')">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="closePosition('${symbol}')">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = `
+                    <div class="text-center text-muted py-5">
+                        <i class="fas fa-robot fa-3x mb-3"></i>
+                        <h5>No Active Positions</h5>
+                        <p>The AI trading agent will open positions based on market conditions and strategy weights.</p>
+                        <button class="btn btn-primary mt-3" onclick="startTrading()">
+                            <i class="fas fa-play"></i> Start Trading
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        function updatePortfolioData(data) {
+            document.getElementById('portfolio-value').textContent = `$${data.total_balance?.toLocaleString() || '0.00'}`;
+            document.getElementById('unrealized-pnl').textContent = `$${data.unrealized_pnl?.toLocaleString() || '0.00'}`;
+            document.getElementById('day-pnl').textContent = `$${data.day_pnl?.toLocaleString() || '0.00'}`;
+            document.getElementById('total-positions').textContent = data.active_positions || 0;
+
+            // Update positions chart
+            if (data.portfolio_history && positionsChart) {
+                const timestamps = data.portfolio_history.map(h => new Date(h.timestamp).toLocaleTimeString());
+                const values = data.portfolio_history.map(h => h.value);
+
+                positionsChart.data.labels = timestamps;
+                positionsChart.data.datasets[0].data = values;
+                positionsChart.update();
+            }
+        }
+
+        async function closePosition(symbol) {
+            if (!confirm(`Are you sure you want to close the ${symbol} position?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/positions/close/${symbol}`, { method: 'POST' });
+                const result = await response.json();
+
+                if (result.success) {
+                    loadPositionsData(); // Refresh data
+                    showAlert(`Position ${symbol} closed successfully!`, 'success');
+                } else {
+                    showAlert('Failed to close position: ' + (result.error || 'Unknown error'), 'danger');
+                }
+            } catch (error) {
+                showAlert('Failed to close position: ' + error.message, 'danger');
+            }
+        }
+
+        async function closeAllPositions() {
+            if (!confirm('Are you sure you want to close ALL positions? This action cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/positions/close-all', { method: 'POST' });
+                const result = await response.json();
+
+                if (result.success) {
+                    loadPositionsData(); // Refresh data
+                    showAlert('All positions closed successfully!', 'success');
+                } else {
+                    showAlert('Failed to close all positions: ' + (result.error || 'Unknown error'), 'danger');
+                }
+            } catch (error) {
+                showAlert('Failed to close all positions: ' + error.message, 'danger');
+            }
+        }
+
+        async function startTrading() {
+            try {
+                const response = await fetch('/api/trader/start', { method: 'POST' });
+                const result = await response.json();
+
+                if (result.status === 'starting') {
+                    showAlert('Trading started successfully!', 'success');
+                    setTimeout(loadPositionsData, 2000); // Refresh after 2 seconds
+                } else {
+                    showAlert('Failed to start trading: ' + (result.error || 'Unknown error'), 'danger');
+                }
+            } catch (error) {
+                showAlert('Failed to start trading: ' + error.message, 'danger');
+            }
+        }
+
+        function modifyPosition(symbol) {
+            // Placeholder for position modification modal
+            showAlert(`Position modification for ${symbol} - Feature coming soon!`, 'info');
+        }
+
+        function showAlert(message, type) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+
+            document.body.appendChild(alertDiv);
+
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+
+        // Auto-refresh every 10 seconds
+        setInterval(loadPositionsData, 10000);
+    </script>
+</body>
+
+</html>
+
+

@@ -54,7 +54,7 @@ class AttentionMechanism(nn.Module):
 
         self.dropout = nn.Dropout(0.1)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: np.ndarray) -> np.ndarray:
         batch_size, seq_len, hidden_size = x.size()
 
         # Linear transformations and reshape
@@ -130,7 +130,7 @@ class LSTMPredictor(nn.Module):
             elif 'bias' in name:
                 nn.init.constant_(param, 0)
 
-    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
+    def forward(self, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
         """
         Forward pass through the model.
 
@@ -622,7 +622,7 @@ class TransformerPredictor(nn.Module):
         self.output_head = nn.Linear(config.hidden_size, config.output_size)
         self.uncertainty_head = nn.Linear(config.hidden_size, config.output_size)
 
-    def _create_positional_encoding(self, seq_len: int, d_model: int) -> torch.Tensor:
+    def _create_positional_encoding(self, seq_len: int, d_model: int) -> np.ndarray:
         """Create positional encoding matrix."""
         position = torch.arange(seq_len).unsqueeze(1)
         div_term = torch.exp(torch.arange(0, d_model, 2) * (-np.log(10000.0) / d_model))
@@ -631,7 +631,7 @@ class TransformerPredictor(nn.Module):
         pe[:, 1::2] = torch.cos(position * div_term)
         return pe.unsqueeze(0)
 
-    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
+    def forward(self, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
         # Input embedding
         x = self.input_embedding(x)
 
@@ -756,3 +756,4 @@ class EnsembleDLPredictor(BaseMLModel):
                 ))
 
         return ensemble_predictions
+

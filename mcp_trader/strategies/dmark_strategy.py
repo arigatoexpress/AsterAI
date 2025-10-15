@@ -412,3 +412,4 @@ class DMarkEnsembleStrategy(BaseTradingModel):
                 signals.append(signal)
         
         return signals
+

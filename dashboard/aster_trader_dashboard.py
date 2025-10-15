@@ -26,40 +26,45 @@ from mcp_trader.execution.aster_client import AsterClient
 from mcp_trader.trading.autonomous_trader import AutonomousTrader
 from mcp_trader.risk.risk_manager import RiskManager
 from mcp_trader.data.aster_feed import AsterDataFeed
+from mcp_trader.logging_utils import get_logger
+from mcp_trader.security.middleware import SecurityMiddleware, SecurityLogger, require_authentication, rate_limit
+from mcp_trader.security.input_validation import InputValidator
+from mcp_trader.security.config import security_config
 
-# Setup logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Setup structured logging
+logger = get_logger("dashboard")
 
-app = FastAPI(title="Rari Trade AI - Aster Dashboard", version="1.0.0")
+# Initialize security logger
+security_logger = SecurityLogger()
 
-# Mount static files and templates
-app.mount("/static", StaticFiles(directory="dashboard/static"), name="static")
-templates = Jinja2Templates(directory="dashboard/templates")
+from contextlib import asynccontextmanager
 
-# Global state
-dashboard_state = {
-    'trader': None,
-    'client': None,
-    'data_feed': None,
-    'risk_manager': None,
-    'connected_websockets': set(),
-    'system_status': 'initializing',
-    'last_update': datetime.now()
-}
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize dashboard components on startup."""
-    logger.info("Starting Aster Trader Dashboard...")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for FastAPI."""
+    # Startup
+    logger.info("Starting Aster Trader Dashboard with Security...")
 
     settings = get_settings()
 
-    # Initialize components
-    dashboard_state['client'] = AsterClient(settings.aster_api_key, settings.aster_api_secret)
-    dashboard_state['data_feed'] = AsterDataFeed()
-    dashboard_state['risk_manager'] = RiskManager(settings)
+    # Initialize components with security validation
+    try:
+        dashboard_state['client'] = AsterClient(
+            InputValidator.sanitize_string(settings.aster_api_key or ""),
+            InputValidator.sanitize_string(settings.aster_api_secret or "")
+        )
+        dashboard_state['data_feed'] = AsterDataFeed()
+        dashboard_state['risk_manager'] = RiskManager(InputValidator.create_secure_config({
+            'max_drawdown': settings.max_portfolio_risk,
+            'max_position_size': settings.max_single_position_risk,
+            'max_concurrent_positions': settings.max_concurrent_positions
+        }))
+
+        logger.info("✅ All components initialized securely")
+
+    except Exception as e:
+        logger.error(f"❌ Component initialization failed: {e}")
+        raise
 
     # Initialize trader (in test mode for dashboard)
     trader_config = {
@@ -85,25 +90,99 @@ async def startup_event():
 
     logger.info("Dashboard initialization complete")
 
+    yield  # Application runs here
 
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Clean up resources on shutdown."""
+    # Shutdown
     logger.info("Shutting down dashboard...")
 
     if dashboard_state['trader']:
         await dashboard_state['trader'].stop()
 
+    if dashboard_state['client']:
+        await dashboard_state['client'].disconnect()
+
+    if dashboard_state['data_feed']:
+        await dashboard_state['data_feed'].stop()
+
     dashboard_state['system_status'] = 'shutdown'
 
 
+# Global state
+dashboard_state = {
+    'trader': None,
+    'client': None,
+    'data_feed': None,
+    'risk_manager': None,
+    'connected_websockets': set(),
+    'system_status': 'initializing',
+    'last_update': datetime.now()
+}
+
+# Create FastAPI app with lifespan
+app = FastAPI(
+    title="AsterAI HFT Trader - Secure Dashboard",
+    version="2.0.0",
+    lifespan=lifespan,
+    docs_url="/docs" if os.getenv("DEBUG") else None,  # Hide docs in production
+    redoc_url="/redoc" if os.getenv("DEBUG") else None
+)
+
+# Add security middleware
+app.add_middleware(
+    SecurityMiddleware,
+    rate_limit_requests=security_config.rate_limit_requests_per_minute,
+    rate_limit_window=60
+)
+
+# Mount static files and templates after app creation
+app.mount("/static", StaticFiles(directory="dashboard/static"), name="static")
+templates = Jinja2Templates(directory="dashboard/templates")
+
+
 @app.get("/", response_class=HTMLResponse)
-async def dashboard(request: Request):
-    """Main dashboard page."""
+async def market_overview(request: Request):
+    """Beautiful market overview main page."""
+    return templates.TemplateResponse("market_overview.html", {
+        "request": request,
+        "title": "AsterAI Market Overview"
+    })
+
+
+@app.get("/ai-learning", response_class=HTMLResponse)
+async def ai_learning_page(request: Request):
+    """AI Learning and strategy adaptation page."""
+    return templates.TemplateResponse("ai_learning.html", {
+        "request": request,
+        "title": "AsterAI - AI Learning"
+    })
+
+
+@app.get("/positions", response_class=HTMLResponse)
+async def positions_page(request: Request):
+    """Positions management page."""
+    return templates.TemplateResponse("positions.html", {
+        "request": request,
+        "title": "AsterAI - Positions"
+    })
+
+
+@app.get("/analytics", response_class=HTMLResponse)
+async def analytics_page(request: Request):
+    """Advanced analytics and backtesting page."""
+    return templates.TemplateResponse("analytics.html", {
+        "request": request,
+        "title": "AsterAI - Analytics"
+    })
+
+
+@app.get("/old-dashboard", response_class=HTMLResponse)
+async def old_dashboard(request: Request):
+    """Legacy dashboard page."""
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
-        "title": "Aster Autonomous Trader",
-        "symbols": PRIORITY_SYMBOLS
+        "title": "AsterAI - Legacy Dashboard",
+        "symbols": PRIORITY_SYMBOLS,
+        "system_status": dashboard_state.get('system_status', 'initializing')
     })
 
 
@@ -125,18 +204,17 @@ async def get_market_data():
     data = {}
 
     if dashboard_state['client']:
-        async with dashboard_state['client']:
-            for symbol in PRIORITY_SYMBOLS:
-                symbol_data = {}
+        for symbol in PRIORITY_SYMBOLS:
+            symbol_data = {}
 
-                try:
-                    # Get ticker data
-                    ticker = await dashboard_state['client'].get_24hr_ticker(symbol)
-                    symbol_data['ticker'] = ticker
-                except Exception as e:
-                    symbol_data['ticker_error'] = str(e)
+            try:
+                # Get ticker data
+                ticker = await dashboard_state['client'].get_24hr_ticker(symbol)
+                symbol_data['ticker'] = ticker
+            except Exception as e:
+                symbol_data['ticker_error'] = str(e)
 
-                try:
+            try:
                     # Get order book
                     orderbook = await dashboard_state['client'].get_order_book(symbol, 10)
                     symbol_data['orderbook'] = orderbook
@@ -228,6 +306,8 @@ async def get_trading_decisions():
 
 
 @app.post("/api/trader/start")
+@require_authentication(roles=["admin", "trader"])
+@rate_limit(requests_per_minute=10)
 async def start_trader(background_tasks: BackgroundTasks):
     """Start the autonomous trader."""
     if dashboard_state['system_status'] == 'trading':
@@ -243,6 +323,8 @@ async def start_trader(background_tasks: BackgroundTasks):
 
 
 @app.post("/api/trader/stop")
+@require_authentication(roles=["admin", "trader"])
+@rate_limit(requests_per_minute=10)
 async def stop_trader():
     """Stop the autonomous trader."""
     if dashboard_state['trader']:
@@ -323,6 +405,7 @@ async def get_performance_history(hours: int = 24):
 
 
 @app.get("/api/backtest/run")
+@rate_limit(requests_per_minute=5)
 async def run_backtest(strategy: str = "grid", days: int = 30, symbol: str = "BTCUSDT"):
     """Run a backtest for a specific strategy."""
     try:
@@ -615,15 +698,33 @@ async def get_system_logs(lines: int = 50):
 
 
 if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Aster Trader Dashboard")
+    parser.add_argument('--port', type=int, default=8000, help='Port to run the dashboard on')
+    parser.add_argument('--host', type=str, default="0.0.0.0", help='Host to bind to')
+
+    args = parser.parse_args()
+
     print("🚀 Starting Aster Trader Dashboard...")
-    print("📊 Dashboard will be available at: http://localhost:8000")
-    print("📡 WebSocket endpoint: ws://localhost:8000/ws/live-data")
+    print(f"📊 Dashboard will be available at: http://localhost:{args.port}")
+    print(f"📡 WebSocket endpoint: ws://localhost:{args.port}/ws/live-data")
     print("Press Ctrl+C to stop")
 
-    uvicorn.run(
-        "dashboard.aster_trader_dashboard:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
-        log_level="info"
-    )
+    try:
+        uvicorn.run(
+            "dashboard.aster_trader_dashboard:app",
+            host=args.host,
+            port=args.port,
+            reload=True,
+            log_level="info"
+        )
+    except OSError as e:
+        if "Address already in use" in str(e) or "permission denied" in str(e).lower():
+            logger.error(f"❌ Failed to start dashboard on port {args.port}")
+            logger.error(f"💡 Port {args.port} is already in use or blocked")
+            logger.error("💡 Try a different port: python dashboard/aster_trader_dashboard.py --port 8002")
+            logger.error("💡 Or check if another application is using this port")
+            sys.exit(1)
+        else:
+            raise

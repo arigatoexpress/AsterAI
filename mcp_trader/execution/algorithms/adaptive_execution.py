@@ -763,3 +763,4 @@ class ExecutionEngine:
             'algorithm_performance': avg_slippage_by_algo,
             'execution_efficiency': 1.0 / (1.0 + avg_slippage + avg_market_impact)  # Higher is better
         }
+

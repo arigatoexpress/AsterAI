@@ -430,3 +430,4 @@ class BacktestEngine:
             end_date=data['timestamp'].iloc[-1] if len(data) > 0 else datetime.now(),
             duration_days=0
         )
+

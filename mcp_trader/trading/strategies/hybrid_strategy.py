@@ -321,3 +321,4 @@ class HybridStrategy:
             'grid_performance': self.performance_history['grid'][-10:] if len(self.performance_history['grid']) >= 10 else self.performance_history['grid'],
             'volatility_performance': self.performance_history['volatility'][-10:] if len(self.performance_history['volatility']) >= 10 else self.performance_history['volatility']
         }
+

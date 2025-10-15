@@ -1,8 +1,10 @@
-# GPU-Optimized Dockerfile for RTX 5070Ti + 16-core AMD
+# GPU-Optimized Dockerfile for HFT Aster Trader
+# Optimized for NVIDIA L4 GPU (GCP) and RTX 5070Ti (local)
 # Multi-stage build for maximum performance and minimal size
+# Target: <10ms total latency, <2ms inference
 
-# Base stage with CUDA support
-FROM nvidia/cuda:12.1-devel-ubuntu22.04 AS base
+# Base stage with CUDA 12.4 support
+FROM nvidia/cuda:12.4.0-runtime-ubuntu22.04 AS base
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
@@ -93,11 +95,15 @@ ENV PYTHONPATH=/app:$PYTHONPATH
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD python -c "import torch; print('CUDA available:', torch.cuda.is_available())" || exit 1
 
-# Default command for paper trading
-CMD ["python", "run_complete_system.py", "paper"]
+# Expose ports
+EXPOSE 8080 9090
+
+# Default command for HFT trading
+CMD ["python", "run_adaptive_trader.py", "--balance", "50"]
 
 # Multi-stage build targets
 FROM development AS dev
 CMD ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root"]
 
 FROM production AS prod
+ENTRYPOINT ["python", "run_adaptive_trader.py"]
