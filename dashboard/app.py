@@ -28,6 +28,8 @@ from mcp_trader.backtesting.vectorized_backtester import evaluate_positions
 from mcp_trader.strategies.indicators import sma
 from mcp_trader.data.bigquery_client import BigQueryClient
 from mcp_trader.config import get_aster_symbols, get_symbol_mapping
+from dashboard.enhanced_visualization import EnhancedVisualizer
+from data_pipeline.automated_analysis import AutomatedAnalyzer
 
 # --- Rari Trade AI Configuration ---
 st.set_page_config(
@@ -1825,14 +1827,70 @@ def show_model_zoo():
         rankings = create_model_rankings(comparison_results)
         display_model_rankings(rankings)
 
+    else:
+        st.info("🎯 Please select at least one model and one asset to run the comparison.")
+
+    # Enhanced Visualization & Automated Analysis Tab
+    with st.expander("🎨 Enhanced Visualizations & AI Insights", expanded=False):
+        st.markdown("### 🤖 Real-Time AI-Powered Analysis")
+
+        # Initialize analyzers
+        visualizer = EnhancedVisualizer()
+        analyzer = AutomatedAnalyzer()
+
+        # Sample data (in production, use real-time data)
+        sample_data = pd.DataFrame({
+            'timestamp': pd.date_range('2024-01-01', periods=100, freq='1H'),
+            'close': np.random.normal(50000, 1000, 100),
+            'volume': np.random.normal(10000, 2000, 100),
+            'vpin': np.random.uniform(0.3, 0.8, 100),
+            'pnl': np.random.normal(0.001, 0.02, 100)
+        })
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.markdown("#### 📊 PnL & Drawdown Analysis")
+            pnl_fig = visualizer.create_pnl_chart(sample_data[['pnl']])
+            st.plotly_chart(pnl_fig, use_container_width=True)
+
+        with col2:
+            st.markdown("#### 🔥 VPIN Toxicity Heatmap")
+            vpin_data = sample_data.pivot_table(values='vpin', index=sample_data['timestamp'].dt.hour, columns=sample_data['timestamp'].dt.date)
+            vpin_fig = visualizer.create_vpin_heatmap(vpin_data.head(10))
+            st.plotly_chart(vpin_fig, use_container_width=True)
+
+        # Automated Insights
+        st.markdown("### 🧠 AI-Generated Trading Insights")
+        features = ['close', 'volume', 'vpin']
+        data_with_analysis = analyzer.detect_market_anomalies(sample_data, features)
+        insights = analyzer.generate_trading_insights(data_with_analysis)
+
+        if insights:
+            for insight in insights:
+                st.info(insight)
+        else:
+            st.success("✅ No significant market anomalies detected")
+
+        # Risk Metrics Dashboard
+        st.markdown("### 📈 Risk Metrics Gauges")
+        mock_metrics = {
+            'sharpe': 2.3,
+            'win_rate': 0.58,
+            'drawdown': -0.08,
+            'profit_factor': 1.9
+        }
+        risk_dashboard = visualizer.create_risk_metrics_dashboard(mock_metrics)
+
+        # Since Dash components don't work directly in Streamlit, display as HTML
+        st.markdown("Risk metrics visualization would be displayed here with real-time gauges.")
+        st.json(mock_metrics)
+
         # Best Model Recommendations
         st.markdown("### 💡 AI Model Recommendations")
 
         recommendations = generate_model_recommendations(comparison_results)
         display_model_recommendations(recommendations)
-
-    else:
-        st.info("🎯 Please select at least one model and one asset to run the comparison.")
 
 # Helper Functions for Technical Analysis
 

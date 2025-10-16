@@ -1,0 +1,537 @@
+/* ===========================================
+   ASTER AI TRADING - MATRIX THEME
+   Professional, Cyberpunk-Inspired Design
+   =========================================== */
+
+:root {
+    /* Matrix Color Palette */
+    --matrix-green: #00ff88;
+    --matrix-green-bright: #39ff77;
+    --matrix-green-dim: #004422;
+    --matrix-dark: #0a0a0a;
+    --matrix-darker: #050505;
+    --matrix-accent: #008844;
+    --matrix-text: #ffffff;
+    --matrix-text-dim: #cccccc;
+    --matrix-border: #00ff88;
+    --matrix-border-dim: #004422;
+    --matrix-bg-gradient: linear-gradient(135deg, #0a0a0a 0%, #050505 50%, #0a0a0a 100%);
+    --matrix-card-bg: rgba(0, 255, 136, 0.05);
+    --matrix-card-border: rgba(0, 255, 136, 0.2);
+    --matrix-hover: rgba(0, 255, 136, 0.1);
+    --matrix-active: rgba(0, 255, 136, 0.15);
+
+    /* Typography */
+    --font-mono: 'Courier New', 'Monaco', 'Menlo', monospace;
+    --font-tech: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+}
+
+/* Global Styles */
+* {
+    box-sizing: border-box;
+}
+
+/* Matrix Background Animation */
+.matrix-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    background: var(--matrix-bg-gradient);
+    overflow: hidden;
+}
+
+.matrix-bg::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background:
+        radial-gradient(circle at 20% 20%, rgba(0, 255, 136, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(0, 255, 136, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 40% 60%, rgba(0, 255, 136, 0.08) 0%, transparent 50%);
+    animation: matrixGlow 8s ease-in-out infinite alternate;
+}
+
+@keyframes matrixGlow {
+    0% { opacity: 0.3; }
+    100% { opacity: 0.7; }
+}
+
+/* Matrix Rain Effect */
+.matrix-rain {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: -1;
+    overflow: hidden;
+}
+
+.matrix-rain::after {
+    content: '0101001001010010010100100101001001010010';
+    position: absolute;
+    top: -100px;
+    left: 10%;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: var(--matrix-green);
+    opacity: 0.1;
+    animation: matrixRain 10s linear infinite;
+}
+
+@keyframes matrixRain {
+    0% { transform: translateY(-100px); opacity: 0; }
+    10% { opacity: 0.1; }
+    90% { opacity: 0.1; }
+    100% { transform: translateY(100vh); opacity: 0; }
+}
+
+/* Main Container */
+.main-container {
+    background: transparent !important;
+    color: var(--matrix-text);
+    font-family: var(--font-tech);
+}
+
+/* Headers */
+.matrix-header {
+    font-family: var(--font-mono);
+    color: var(--matrix-green-bright);
+    text-shadow: 0 0 20px var(--matrix-green), 0 0 40px var(--matrix-green-dim);
+    font-weight: bold;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 2rem;
+    border-bottom: 2px solid var(--matrix-border);
+    padding-bottom: 1rem;
+    background: linear-gradient(90deg, var(--matrix-green), var(--matrix-green-bright), var(--matrix-green));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.matrix-subheader {
+    color: var(--matrix-green);
+    font-family: var(--font-mono);
+    font-size: 1.2rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    border-left: 3px solid var(--matrix-border);
+    padding-left: 1rem;
+}
+
+/* Cards */
+.matrix-card {
+    background: var(--matrix-card-bg);
+    border: 1px solid var(--matrix-card-border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 20px rgba(0, 255, 136, 0.1);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.matrix-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--matrix-green), transparent);
+    animation: cardGlow 3s ease-in-out infinite;
+}
+
+@keyframes cardGlow {
+    0%, 100% { transform: translateX(-100%); }
+    50% { transform: translateX(100%); }
+}
+
+.matrix-card:hover {
+    border-color: var(--matrix-green);
+    box-shadow: 0 8px 30px rgba(0, 255, 136, 0.2);
+    transform: translateY(-2px);
+}
+
+/* Status Indicators */
+.status-matrix {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.status-online {
+    color: var(--matrix-green-bright);
+    text-shadow: 0 0 10px var(--matrix-green);
+}
+
+.status-offline {
+    color: #ff4444;
+    text-shadow: 0 0 10px #ff4444;
+}
+
+.status-warning {
+    color: #ffaa00;
+    text-shadow: 0 0 10px #ffaa00;
+}
+
+/* Metrics */
+.matrix-metric {
+    background: var(--matrix-card-bg);
+    border: 1px solid var(--matrix-card-border);
+    border-radius: 6px;
+    padding: 1rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.matrix-metric:hover {
+    border-color: var(--matrix-green);
+    box-shadow: 0 4px 15px rgba(0, 255, 136, 0.2);
+}
+
+.matrix-metric-value {
+    font-family: var(--font-mono);
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--matrix-green-bright);
+    text-shadow: 0 0 15px var(--matrix-green);
+    margin-bottom: 0.5rem;
+}
+
+.matrix-metric-label {
+    font-family: var(--font-tech);
+    font-size: 0.9rem;
+    color: var(--matrix-text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Buttons */
+.matrix-button {
+    background: linear-gradient(135deg, var(--matrix-dark), var(--matrix-darker));
+    border: 1px solid var(--matrix-border);
+    color: var(--matrix-green);
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 0.75rem 1.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.matrix-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0, 255, 136, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.matrix-button:hover {
+    border-color: var(--matrix-green-bright);
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+    color: var(--matrix-green-bright);
+}
+
+.matrix-button:hover::before {
+    left: 100%;
+}
+
+.matrix-button:active {
+    transform: scale(0.98);
+}
+
+/* Progress Bars */
+.matrix-progress {
+    width: 100%;
+    height: 8px;
+    background: var(--matrix-darker);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 0.5rem 0;
+}
+
+.matrix-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--matrix-green), var(--matrix-green-bright));
+    border-radius: 4px;
+    transition: width 0.3s ease;
+    box-shadow: 0 0 10px var(--matrix-green);
+}
+
+/* Tables */
+.matrix-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+}
+
+.matrix-table th,
+.matrix-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--matrix-border-dim);
+}
+
+.matrix-table th {
+    background: var(--matrix-card-bg);
+    color: var(--matrix-green);
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.matrix-table tr:hover {
+    background: var(--matrix-hover);
+}
+
+/* Charts */
+.matrix-chart {
+    background: var(--matrix-card-bg);
+    border: 1px solid var(--matrix-card-border);
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1rem 0;
+}
+
+/* Sidebar */
+.matrix-sidebar {
+    background: var(--matrix-card-bg);
+    border: 1px solid var(--matrix-card-border);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.matrix-sidebar-title {
+    color: var(--matrix-green);
+    font-family: var(--font-mono);
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--matrix-border-dim);
+    padding-bottom: 0.5rem;
+}
+
+/* Navigation */
+.matrix-nav-item {
+    display: block;
+    color: var(--matrix-text-dim);
+    text-decoration: none;
+    font-family: var(--font-tech);
+    padding: 0.5rem 1rem;
+    margin: 0.25rem 0;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 0.9rem;
+}
+
+.matrix-nav-item:hover,
+.matrix-nav-item-active {
+    background: var(--matrix-hover);
+    color: var(--matrix-green);
+    border-left: 3px solid var(--matrix-green);
+    padding-left: calc(1rem - 3px);
+}
+
+/* Alerts */
+.matrix-alert {
+    padding: 1rem;
+    border-radius: 6px;
+    margin: 1rem 0;
+    font-family: var(--font-tech);
+    border-left: 4px solid;
+}
+
+.matrix-alert-success {
+    background: rgba(0, 255, 136, 0.1);
+    border-left-color: var(--matrix-green);
+    color: var(--matrix-green-bright);
+}
+
+.matrix-alert-warning {
+    background: rgba(255, 170, 0, 0.1);
+    border-left-color: #ffaa00;
+    color: #ffaa00;
+}
+
+.matrix-alert-error {
+    background: rgba(255, 68, 68, 0.1);
+    border-left-color: #ff4444;
+    color: #ff4444;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.matrix-fade-in {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .matrix-header {
+        font-size: 1.5rem;
+        letter-spacing: 1px;
+    }
+
+    .matrix-card {
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .matrix-metric-value {
+        font-size: 1.5rem;
+    }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--matrix-darker);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--matrix-border);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--matrix-green);
+}
+
+/* Loading Animation */
+.matrix-loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--matrix-border-dim);
+    border-radius: 50%;
+    border-top-color: var(--matrix-green);
+    animation: matrixSpin 1s ease-in-out infinite;
+}
+
+@keyframes matrixSpin {
+    to { transform: rotate(360deg); }
+}
+
+/* Glitch Effect for Headers */
+.matrix-glitch {
+    position: relative;
+    display: inline-block;
+}
+
+.matrix-glitch::before,
+.matrix-glitch::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+}
+
+.matrix-glitch::before {
+    animation: glitch1 0.5s infinite;
+    color: #ff0000;
+    z-index: -1;
+}
+
+.matrix-glitch::after {
+    animation: glitch2 0.5s infinite;
+    color: #00ffff;
+    z-index: -2;
+}
+
+@keyframes glitch1 {
+    0%, 100% { transform: translate(0); }
+    20% { transform: translate(-2px, 2px); }
+    40% { transform: translate(-2px, -2px); }
+    60% { transform: translate(2px, 2px); }
+    80% { transform: translate(2px, -2px); }
+}
+
+@keyframes glitch2 {
+    0%, 100% { transform: translate(0); }
+    20% { transform: translate(2px, -2px); }
+    40% { transform: translate(2px, 2px); }
+    60% { transform: translate(-2px, -2px); }
+    80% { transform: translate(-2px, 2px); }
+}
+
+/* Terminal/Command Line Style */
+.matrix-terminal {
+    background: var(--matrix-darker);
+    border: 1px solid var(--matrix-border);
+    border-radius: 6px;
+    padding: 1rem;
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    color: var(--matrix-green);
+    margin: 1rem 0;
+}
+
+.matrix-terminal::before {
+    content: '$ ';
+    color: var(--matrix-green-bright);
+}
+
+/* Data Streams Animation */
+.matrix-data-stream {
+    position: relative;
+    overflow: hidden;
+}
+
+.matrix-data-stream::after {
+    content: '0101001001010010010100100101001001010010';
+    position: absolute;
+    top: 0;
+    right: -100%;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--matrix-green);
+    opacity: 0.3;
+    white-space: nowrap;
+    animation: dataStream 8s linear infinite;
+}
+
+@keyframes dataStream {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-200%); }
+}
