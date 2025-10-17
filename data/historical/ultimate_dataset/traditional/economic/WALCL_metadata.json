@@ -1,0 +1,9 @@
+{
+  "symbol": "WALCL",
+  "name": "Fed Balance Sheet",
+  "asset_type": "economic",
+  "source": "fred",
+  "records": 722,
+  "date_range": "2023-10-18 00:00:00 to 2025-10-08 00:00:00",
+  "collection_time": "2025-10-15T01:59:54.183729"
+}

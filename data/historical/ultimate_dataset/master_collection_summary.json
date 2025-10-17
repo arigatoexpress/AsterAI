@@ -1,0 +1,43 @@
+{
+  "collection_time": "2025-10-15T02:00:01.844614",
+  "total_duration": "1:02:33.693064",
+  "data_sources": {
+    "crypto": {
+      "assets_collected": 100,
+      "sources_used": [
+        "aster",
+        "binance",
+        "coingecko",
+        "cryptocompare",
+        "yahoo"
+      ]
+    },
+    "traditional": {
+      "assets_collected": 15,
+      "categories": [
+        "equities",
+        "indices",
+        "commodities",
+        "economic_indicators",
+        "bonds"
+      ]
+    },
+    "alternative": {
+      "data_types": [
+        "sentiment",
+        "google_trends",
+        "fear_greed",
+        "on_chain",
+        "news"
+      ]
+    }
+  },
+  "statistics": {
+    "total_files_created": 228,
+    "total_size_mb": 6.476811408996582,
+    "data_quality": {
+      "crypto_coverage": 100.0,
+      "no_synthetic_data": true
+    }
+  }
+}

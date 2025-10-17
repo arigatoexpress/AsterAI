@@ -1,0 +1,9 @@
+{
+  "symbol": "DFF",
+  "name": "Fed Funds Rate",
+  "asset_type": "economic",
+  "source": "fred",
+  "records": 729,
+  "date_range": "2023-10-16 00:00:00 to 2025-10-13 00:00:00",
+  "collection_time": "2025-10-15T01:59:47.373825"
+}

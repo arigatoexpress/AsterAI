@@ -99,12 +99,22 @@ class DashboardDataManager:
         try:
             training_dir = self.project_root / "training_results"
             if not training_dir.exists():
-                return {"status": "Not Found", "last_run": None, "accuracy": 0}
+                return {
+                    "status": "Ready to Train",
+                    "last_run": None,
+                    "accuracy": 0,
+                    "message": "Training data not found. Run training scripts to generate data."
+                }
 
             # Find latest training
             runs = [d for d in training_dir.iterdir() if d.is_dir()]
             if not runs:
-                return {"status": "Not Found", "last_run": None, "accuracy": 0}
+                return {
+                    "status": "No Training Runs",
+                    "last_run": None,
+                    "accuracy": 0,
+                    "message": "No training sessions found. Run training scripts to start."
+                }
 
             latest = max(runs, key=lambda x: x.stat().st_mtime)
 
@@ -331,8 +341,8 @@ class UnifiedTradingDashboard:
 
     def run(self):
         """Run the dashboard."""
-        st.markdown('<h1 class="matrix-header" data-text="🚀 ASTER AI TRADING CONSOLE">🚀 ASTER AI TRADING CONSOLE</h1>', unsafe_allow_html=True)
-        st.markdown('<div class="matrix-subheader">CENTRAL OPERATIONS CENTER - CONTINUOUS DATA COLLECTION, ANALYSIS & TRADING</div>', unsafe_allow_html=True)
+        st.markdown('<h1 class="matrix-header" data-text="🚀 RARI TRADE AI CONSOLE">🚀 RARI TRADE AI CONSOLE</h1>', unsafe_allow_html=True)
+        st.markdown('<div class="matrix-subheader">ENTERPRISE TRADING PLATFORM - ADVANCED AI MODELS & RISK MANAGEMENT</div>', unsafe_allow_html=True)
 
         # Sidebar navigation
         st.sidebar.markdown('<div class="matrix-sidebar"><div class="matrix-sidebar-title">🖥️ NAVIGATION MATRIX</div></div>', unsafe_allow_html=True)

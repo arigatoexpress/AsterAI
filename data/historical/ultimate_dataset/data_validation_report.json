@@ -1,0 +1,35 @@
+{
+  "validation_timestamp": "2025-10-15T01:20:10.855173",
+  "summary": {
+    "crypto": {
+      "quality_score": 35,
+      "quality_grade": "F",
+      "assets_validated": 59,
+      "issues_found": 92,
+      "total_records": 118059
+    },
+    "traditional": {
+      "quality_score": 100,
+      "quality_grade": "A",
+      "assets_validated": 0,
+      "issues_found": 0,
+      "total_records": 0
+    },
+    "alternative": {
+      "quality_score": 100,
+      "quality_grade": "A",
+      "assets_validated": 0,
+      "issues_found": 0,
+      "total_records": 0
+    }
+  },
+  "recommendations": [
+    "\ud83d\udd34 HIGH PRIORITY: crypto data quality is poor (35%). Requires immediate attention.",
+    "\ud83d\udfe1 REVIEW: crypto has 92 data issues. Manual review recommended.",
+    "\ud83d\udfe1 EXPAND: traditional has limited asset coverage. Consider adding more assets.",
+    "\ud83d\udfe1 EXPAND: alternative has limited asset coverage. Consider adding more assets."
+  ],
+  "critical_issues": [],
+  "overall_quality_score": 78.3,
+  "overall_grade": "Good"
+}

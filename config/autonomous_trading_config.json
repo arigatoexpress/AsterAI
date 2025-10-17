@@ -1,0 +1,85 @@
+{
+  "initial_capital": 100,
+  "max_leverage": 3,
+  "position_size_pct": 0.02,
+  "stop_loss_pct": 0.02,
+  "take_profit_pct": 0.04,
+  "daily_loss_limit_pct": 0.10,
+  "max_positions": 3,
+  "trading_pairs": ["BTCUSDT", "ETHUSDT"],
+  "data_collection_interval": 300,
+  "retraining_frequency": "weekly",
+  "optimization_frequency": "daily",
+  "risk_management": {
+    "max_drawdown_pct": 0.15,
+    "correlation_limit": 0.7,
+    "volatility_adjustment": true,
+    "kelly_criterion": true
+  },
+  "strategies": {
+    "market_making": {
+      "enabled": true,
+      "weight": 0.3,
+      "spread_multiplier": 1.5,
+      "inventory_skew_threshold": 0.3,
+      "max_position_size": 0.05
+    },
+    "funding_arbitrage": {
+      "enabled": true,
+      "weight": 0.4,
+      "funding_rate_threshold": 0.001,
+      "position_size": 0.03,
+      "max_leverage": 2.0
+    },
+    "dmark": {
+      "enabled": true,
+      "weight": 0.3,
+      "dmark_threshold": 0.6,
+      "stop_loss_pct": 0.02,
+      "take_profit_pct": 0.06
+    }
+  },
+  "data_sources": {
+    "primary": "aster_dex",
+    "backup": "binance",
+    "fallback": "coingecko"
+  },
+  "monitoring": {
+    "dashboard_refresh_interval": 5,
+    "alert_email": "your-email@example.com",
+    "alert_webhook": "https://hooks.slack.com/your-webhook-url",
+    "log_level": "INFO"
+  },
+  "cloud": {
+    "project_id": "your-project-id",
+    "region": "us-central1",
+    "service_account": "aster-trading@your-project-id.iam.gserviceaccount.com",
+    "storage_bucket": "aster-trading-data-your-project-id"
+  },
+  "api_keys": {
+    "aster_dex": {
+      "api_key": "your-aster-api-key",
+      "api_secret": "your-aster-api-secret"
+    },
+    "binance": {
+      "api_key": "your-binance-api-key",
+      "api_secret": "your-binance-api-secret"
+    }
+  },
+  "database": {
+    "bigquery_dataset": "aster_trading",
+    "tables": {
+      "market_data": "market_data",
+      "features": "features",
+      "trades": "trades",
+      "performance": "performance"
+    }
+  },
+  "safety": {
+    "emergency_stop_enabled": true,
+    "max_daily_trades": 50,
+    "max_hourly_trades": 10,
+    "circuit_breaker_loss_pct": 0.05,
+    "position_timeout_hours": 24
+  }
+}

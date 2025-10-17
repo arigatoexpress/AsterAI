@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aster-ai-paper-trading
+  labels:
+    app: aster-ai-trading
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aster-ai-trading
+  template:
+    metadata:
+      labels:
+        app: aster-ai-trading
+    spec:
+      containers:
+      - name: paper-trading
+        image: gcr.io/your-project/aster-ai-paper-trading:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: PAPER_TRADING_CAPITAL
+          value: "10000.0"
+        - name: MONITORING_INTERVAL
+          value: "60"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        volumeMounts:
+        - name: logs-volume
+          mountPath: /app/logs
+        - name: results-volume
+          mountPath: /app/paper_trading_results
+      volumes:
+      - name: logs-volume
+        emptyDir: {}
+      - name: results-volume
+        persistentVolumeClaim:
+          claimName: paper-trading-results-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aster-ai-paper-trading-service
+spec:
+  selector:
+    app: aster-ai-trading
+  ports:
+  - port: 8080
+    targetPort: 8080
+  type: LoadBalancer

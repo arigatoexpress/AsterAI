@@ -15,6 +15,8 @@ import json
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
 import logging
+import subprocess
+import os
 
 # Add project root to path
 import sys
@@ -695,6 +697,38 @@ async def get_system_logs(lines: int = 50):
         })
 
     return {'logs': logs}
+
+
+@app.post("/api/test/ui")
+async def test_ui_automation():
+    """Test UI elements using Playwright MCP for dashboard automation."""
+    try:
+        # Example: Navigate to the dashboard and take a screenshot
+        url = "http://localhost:8000"  # Assuming dashboard is running locally
+
+        # Simulate Playwright tool calls via subprocess (since MCP is Docker-based)
+        # In a real setup, you'd use the MCP client library
+        result = subprocess.run([
+            "docker", "run", "-i", "--rm", "mcp/playwright"
+        ], input=f"browser_navigate(url='{url}')\nbrowser_take_screenshot(filename='ui_test.png')\nbrowser_snapshot()".encode(),
+           capture_output=True, text=True, timeout=30)
+
+        if result.returncode == 0:
+            return {
+                "status": "success",
+                "message": "UI test completed via Playwright",
+                "output": result.stdout,
+                "screenshot": "ui_test.png (if generated)"
+            }
+        else:
+            return {
+                "status": "error",
+                "message": "UI test failed",
+                "error": result.stderr
+            }
+    except Exception as e:
+        logger.error(f"UI test error: {e}")
+        return {"status": "error", "message": str(e)}
 
 
 if __name__ == "__main__":

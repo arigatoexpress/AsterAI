@@ -1,0 +1,70 @@
+{
+  "organization_summary": {
+    "total_archives_created": 5,
+    "total_files_organized": 5,
+    "total_size_mb": 0.01,
+    "organization_date": "2025-10-16T22:35:00.773450",
+    "categories_found": {
+      "backtesting": {
+        "count": 1,
+        "total_size_mb": 0.0,
+        "files": [
+          "backtest_20251015_183646.json"
+        ]
+      },
+      "training": {
+        "count": 3,
+        "total_size_mb": 0.0,
+        "files": [
+          "validation_report_20251015_184016.json",
+          "validation_report_20251015_184037.json",
+          "training_report_20251015_184055.md"
+        ]
+      },
+      "trading": {
+        "count": 1,
+        "total_size_mb": 0.0,
+        "files": [
+          "paper_trading_20251015_023739.json"
+        ]
+      }
+    }
+  },
+  "file_details": [
+    {
+      "filename": "backtest_20251015_183646.json",
+      "category": "backtesting",
+      "size_mb": 0.0,
+      "extracted_date": "2025-10-15",
+      "description": "Backtesting results and performance metrics"
+    },
+    {
+      "filename": "validation_report_20251015_184016.json",
+      "category": "training",
+      "size_mb": 0.0,
+      "extracted_date": "2025-10-15",
+      "description": "Data validation and quality assessment results"
+    },
+    {
+      "filename": "validation_report_20251015_184037.json",
+      "category": "training",
+      "size_mb": 0.0,
+      "extracted_date": "2025-10-15",
+      "description": "Data validation and quality assessment results"
+    },
+    {
+      "filename": "training_report_20251015_184055.md",
+      "category": "training",
+      "size_mb": 0.0,
+      "extracted_date": "2025-10-15",
+      "description": "Model training results and validation data"
+    },
+    {
+      "filename": "paper_trading_20251015_023739.json",
+      "category": "trading",
+      "size_mb": 0.0,
+      "extracted_date": "2025-10-15",
+      "description": "Trading system results and performance data"
+    }
+  ]
+}

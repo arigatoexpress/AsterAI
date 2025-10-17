@@ -1,0 +1,51 @@
+{
+  "timestamp": "2025-10-15T17:39:29.900276",
+  "gpu_status": {
+    "available": true,
+    "name": "NVIDIA GeForce RTX 5070 Ti",
+    "driver_version": "581.57",
+    "memory_total": 16303,
+    "utilization": 1,
+    "temperature": 25,
+    "cuda_version": "12.8",
+    "pytorch_available": true,
+    "pytorch_version": "2.6.0+cu124",
+    "cuda_available": true,
+    "cuda_device_count": 1,
+    "cuda_device_name": "NVIDIA GeForce RTX 5070 Ti",
+    "cuda_compute_capability": [
+      12,
+      0
+    ]
+  },
+  "data_status": {
+    "available": true,
+    "file_count": 78,
+    "total_size_mb": 1.32,
+    "files": [
+      "0GUSDT_1d.parquet",
+      "0GUSDT_1h.parquet",
+      "0GUSDT_4h.parquet",
+      "1000BONKUSDT_1d.parquet",
+      "1000BONKUSDT_1h.parquet",
+      "1000BONKUSDT_4h.parquet",
+      "1000CHEEMSUSDT_1d.parquet",
+      "1000CHEEMSUSDT_1h.parquet",
+      "1000CHEEMSUSDT_4h.parquet",
+      "1000FLOKIUSDT_1d.parquet"
+    ]
+  },
+  "model_status": {
+    "available": false,
+    "model_count": 0,
+    "models": []
+  },
+  "trading_status": {
+    "bot_running": false,
+    "paper_trading_available": true
+  },
+  "build_status": {
+    "in_progress": false,
+    "status": "Build directory not found"
+  }
+}

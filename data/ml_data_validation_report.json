@@ -1,0 +1,27 @@
+{
+  "timestamp": "2025-10-15T17:07:53.122409",
+  "total_assets": 82,
+  "validated_assets": 82,
+  "failed_assets": [],
+  "completeness_pct": 100.0,
+  "missing_values_pct": 0.0,
+  "price_consistency_score": 0.9984573170731709,
+  "volume_consistency_score": 0.9921319827890932,
+  "extreme_outliers": 595,
+  "data_gaps": 0,
+  "min_samples": 2001,
+  "max_samples": 2001,
+  "avg_samples": 2001.0,
+  "features_validated": [
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "ready_for_training": true,
+  "issues": [],
+  "warnings": [
+    "IOTX: High outlier count: 22 (1.10%)"
+  ]
+}

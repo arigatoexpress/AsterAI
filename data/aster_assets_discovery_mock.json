@@ -1,0 +1,147 @@
+{
+  "discovery_timestamp": "2025-10-14T22:24:55.386025",
+  "total_assets_discovered": 8,
+  "trainable_assets": 8,
+  "assets_by_type": {
+    "spot": 8,
+    "perpetual": 0
+  },
+  "assets": {
+    "BTCUSDT": {
+      "symbol": "BTCUSDT",
+      "base_asset": "BTC",
+      "quote_asset": "USDT",
+      "type": "spot",
+      "status": "TRADING",
+      "is_trainable": true,
+      "has_trades": true,
+      "has_orderbook": true,
+      "has_historical": true,
+      "data_points_24h": 24,
+      "data_quality_score": 0.9,
+      "filters": [],
+      "permissions": [
+        "SPOT"
+      ]
+    },
+    "ETHUSDT": {
+      "symbol": "ETHUSDT",
+      "base_asset": "ETH",
+      "quote_asset": "USDT",
+      "type": "spot",
+      "status": "TRADING",
+      "is_trainable": true,
+      "has_trades": true,
+      "has_orderbook": true,
+      "has_historical": true,
+      "data_points_24h": 24,
+      "data_quality_score": 0.9,
+      "filters": [],
+      "permissions": [
+        "SPOT"
+      ]
+    },
+    "SOLUSDT": {
+      "symbol": "SOLUSDT",
+      "base_asset": "SOL",
+      "quote_asset": "USDT",
+      "type": "spot",
+      "status": "TRADING",
+      "is_trainable": true,
+      "has_trades": true,
+      "has_orderbook": true,
+      "has_historical": true,
+      "data_points_24h": 24,
+      "data_quality_score": 0.9,
+      "filters": [],
+      "permissions": [
+        "SPOT"
+      ]
+    },
+    "SUIUSDT": {
+      "symbol": "SUIUSDT",
+      "base_asset": "SUI",
+      "quote_asset": "USDT",
+      "type": "spot",
+      "status": "TRADING",
+      "is_trainable": true,
+      "has_trades": true,
+      "has_orderbook": true,
+      "has_historical": true,
+      "data_points_24h": 24,
+      "data_quality_score": 0.9,
+      "filters": [],
+      "permissions": [
+        "SPOT"
+      ]
+    },
+    "BNBUSDT": {
+      "symbol": "BNBUSDT",
+      "base_asset": "BNB",
+      "quote_asset": "USDT",
+      "type": "spot",
+      "status": "TRADING",
+      "is_trainable": true,
+      "has_trades": true,
+      "has_orderbook": true,
+      "has_historical": true,
+      "data_points_24h": 24,
+      "data_quality_score": 0.9,
+      "filters": [],
+      "permissions": [
+        "SPOT"
+      ]
+    },
+    "ADAUSDT": {
+      "symbol": "ADAUSDT",
+      "base_asset": "ADA",
+      "quote_asset": "USDT",
+      "type": "spot",
+      "status": "TRADING",
+      "is_trainable": true,
+      "has_trades": true,
+      "has_orderbook": true,
+      "has_historical": true,
+      "data_points_24h": 24,
+      "data_quality_score": 0.9,
+      "filters": [],
+      "permissions": [
+        "SPOT"
+      ]
+    },
+    "DOTUSDT": {
+      "symbol": "DOTUSDT",
+      "base_asset": "DOT",
+      "quote_asset": "USDT",
+      "type": "spot",
+      "status": "TRADING",
+      "is_trainable": true,
+      "has_trades": true,
+      "has_orderbook": true,
+      "has_historical": true,
+      "data_points_24h": 24,
+      "data_quality_score": 0.9,
+      "filters": [],
+      "permissions": [
+        "SPOT"
+      ]
+    },
+    "AVAXUSDT": {
+      "symbol": "AVAXUSDT",
+      "base_asset": "AVAX",
+      "quote_asset": "USDT",
+      "type": "spot",
+      "status": "TRADING",
+      "is_trainable": true,
+      "has_trades": true,
+      "has_orderbook": true,
+      "has_historical": true,
+      "data_points_24h": 24,
+      "data_quality_score": 0.9,
+      "filters": [],
+      "permissions": [
+        "SPOT"
+      ]
+    }
+  }
+}

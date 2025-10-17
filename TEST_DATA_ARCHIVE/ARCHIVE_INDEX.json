@@ -1,0 +1,26 @@
+{
+  "archive_created": "2025-10-16T22:35:00.772471",
+  "total_archives": 1,
+  "total_files": 5,
+  "total_size_mb": 0.01,
+  "archives": {
+    "2025-10-15": {
+      "archive_number": 1,
+      "archive_name": "TEST_ARCHIVE_001_2025-10-15",
+      "file_count": 5,
+      "total_size_mb": 0.01,
+      "categories": [
+        "backtesting",
+        "training",
+        "trading"
+      ],
+      "files": [
+        "backtest_20251015_183646.json",
+        "validation_report_20251015_184016.json",
+        "validation_report_20251015_184037.json",
+        "training_report_20251015_184055.md",
+        "paper_trading_20251015_023739.json"
+      ]
+    }
+  }
+}

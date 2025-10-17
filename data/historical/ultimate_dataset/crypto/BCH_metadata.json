@@ -1,0 +1,14 @@
+{
+  "symbol": "BCH",
+  "sources_used": [
+    "cryptocompare"
+  ],
+  "data_points": 2001,
+  "collection_time": "2025-10-15T00:59:58.440227",
+  "source_details": {
+    "cryptocompare": {
+      "records": 2001,
+      "date_range": "2025-07-23 22:00:00 to 2025-10-15 06:00:00"
+    }
+  }
+}

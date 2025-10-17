@@ -68,7 +68,7 @@ arch>=6.0.0
 # ta-lib>=0.4.25  # Optional: requires binary install, see docs
 
 # Technical Analysis (pure Python alternative)
-pandas-ta>=0.3.14b0
+# pandas-ta>=0.3.14b0  # Removed - package doesn't exist
 ta>=0.11.0
 
 # Data Storage and Processing
