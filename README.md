@@ -1,21 +1,25 @@
-# Rari Trade - Enterprise-Grade AI Trading Platform
+# AsterAI - Ultra-Performance AI Trading System
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-red.svg)](https://pytorch.org/)
+[![CUDA](https://img.shields.io/badge/CUDA-12.0+-green.svg)](https://developer.nvidia.com/cuda-toolkit)
 [![GCP](https://img.shields.io/badge/GCP-Ready-green.svg)](https://cloud.google.com/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-Ready-orange.svg)](https://kubernetes.io/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-**Professional algorithmic trading platform powered by ensemble AI models, advanced risk management, and cloud-native infrastructure. Designed for serious traders seeking automated, scalable trading solutions.**
+**Ultra-performance algorithmic trading platform powered by 7 specialized AI models, GPU acceleration, and enterprise-grade cloud infrastructure. Built for maximum capital efficiency from $100 to $10K+ with institutional-grade risk management.**
 
 ---
 
 ## Core Capabilities
 
-### Advanced AI Ensemble System
-- **Multi-Model Architecture**: Seven specialized trading models (PPO, Trend Following, Mean Reversion, Volatility, Order Flow, ML Classifier, VPIN) working in coordinated ensemble
-- **Adaptive Learning Framework**: Continuous model retraining with systematic A/B testing and hyperparameter optimization
+### Ultra-Performance AI Ensemble System
+- **7 Specialized AI Models**: PPO (Reinforcement Learning), Trend Following, Mean Reversion, Volatility, Order Flow, ML Classifier, and VPIN working in coordinated ensemble
+- **GPU-Accelerated Training**: RTX 5070 Ti optimized with JAX and TensorRT for maximum performance
+- **Real-Time Adaptation**: Continuous model retraining with systematic A/B testing and hyperparameter optimization
 - **Meta-Learning Engine**: Dynamically learns optimal model weight combinations based on market conditions
-- **Performance-Based Model Selection**: Automatic switching between models based on real-time performance metrics
+- **Performance-Based Selection**: Automatic switching between models based on real-time performance metrics
 
 ### Enterprise-Grade Infrastructure
 - **Self-Healing Data Pipeline**: Automated gap filling, data corruption repair, and quality assurance monitoring
@@ -23,13 +27,13 @@
 - **High-Availability Design**: Built for 99.9% uptime with comprehensive monitoring and alerting
 - **Real-Time Observability**: Complete system visibility through advanced dashboards and automated notifications
 
-### Intelligent Capital Scaling
+### Intelligent Capital Scaling System
 - **Conservative Starting Position**: Begins with $100 using highly conservative risk parameters
 - **Performance-Driven Growth**: Progressive scaling based on proven track record and risk-adjusted returns
-- **Four-Tier Capital Structure**: Automatic risk adjustment across capital growth stages
+- **Four-Tier Capital Structure**: Automatic risk adjustment across capital growth stages ($100 → $10K+)
 - **Automated Compounding**: Systematic reinvestment of profits with optimized position sizing
 
-### Comprehensive Risk Management
+### Advanced Risk Management Framework
 - **Mathematical Position Sizing**: Kelly Criterion optimization for theoretically optimal position sizing
 - **Dynamic Risk Adjustment**: Volatility-based sizing that adapts to market conditions
 - **Multi-Layer Safety Controls**: Redundant kill switches, circuit breakers, and emergency protocols
@@ -194,31 +198,25 @@ gcloud run deploy rari-trade-api \
 ## Project Structure
 
 ```
-rari-trade/
-├── mcp_trader/                    # Core trading engine
-│   ├── ai/                        # Machine learning models
-│   │   ├── ensemble_trading_system.py      # Multi-model ensemble
-│   │   ├── adaptive_retraining_system.py   # Continuous learning
-│   │   ├── ppo_trading_model.py            # Reinforcement learning
-│   │   └── vpin_calculator.py              # Volume-based indicators
-│   ├── backtesting/               # Validation frameworks
-│   │   ├── walk_forward_analysis.py        # Out-of-sample testing
-│   │   └── monte_carlo_simulation.py       # Risk simulation
-│   ├── data/                      # Data management
-│   │   ├── self_healing_data_manager.py    # Data quality assurance
-│   │   └── dex_realtime_collector.py       # Market data streaming
-│   └── risk/                      # Risk management
-│       └── dynamic_position_sizing.py      # Kelly criterion sizing
-├── scripts/                       # Deployment utilities
-│   ├── setup_paper_trading.py     # Simulation validation
-│   ├── deploy_live_trading.py     # Production deployment
-│   └── setup_gcp_deployment.py    # Cloud infrastructure
+AsterAI/
+├── mcp_trader/                    # Core trading engine (88 files)
+│   ├── ai/                        # Machine learning models & ensemble system
+│   ├── backtesting/               # Advanced backtesting & validation
+│   ├── data/                      # Self-healing data pipeline
+│   └── risk/                      # Dynamic risk management
+├── cloud_deployment/              # Production cloud deployment (GCP/K8s)
+│   ├── k8s/                       # Kubernetes manifests
+│   ├── docker/                    # Docker configurations
+│   └── deploy_to_gcp.sh           # Automated deployment script
+├── dashboard/                     # Web monitoring dashboard
+├── data_pipeline/                 # Data collection & processing
+├── docs/                          # Comprehensive documentation
+├── scripts/                       # Utility scripts (87 files)
 ├── config/                        # Configuration management
-├── data/                          # Historical market data
+├── data/                          # Historical & real-time data
 ├── models/                        # Trained model artifacts
-├── docs/                          # Documentation
 ├── requirements.txt               # Python dependencies
-└── README.md                      # Project documentation
+└── README.md                      # This documentation
 ```
 
 ---
@@ -388,12 +386,17 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) file for
 ## Technology Stack
 
 - **Programming Language**: Python 3.11+
-- **Machine Learning**: PyTorch, scikit-learn
-- **Data Processing**: pandas, numpy
-- **Infrastructure**: Google Cloud Platform
+- **Machine Learning**: PyTorch, JAX, scikit-learn, TensorRT
+- **Data Processing**: pandas, numpy, polars, dask
+- **Infrastructure**: Google Cloud Platform (GCP)
 - **Hardware Acceleration**: NVIDIA CUDA (RTX 5070 Ti optimized)
 - **Containerization**: Docker
-- **Orchestration**: Kubernetes
+- **Orchestration**: Kubernetes (GKE)
+- **Monitoring**: Prometheus, Grafana
+- **Database**: PostgreSQL (optional)
+- **Message Queue**: Google Pub/Sub
+- **Storage**: Google Cloud Storage
+- **CI/CD**: Cloud Build
 
 ---
 

@@ -1,6 +1,6 @@
 # Cloud Deployment Guide
 
-Deploy Rari Trade to Google Cloud Platform for production-grade reliability and scalability.
+Deploy AsterAI to Google Cloud Platform for production-grade reliability and scalability with GPU acceleration.
 
 ## Prerequisites
 
@@ -36,8 +36,14 @@ gcloud config get-value project
 
 ### Deployment Flow
 ```
-Local Code → Cloud Build → Container Registry → Cloud Run → Production
+Local Code → Cloud Build → Artifact Registry → GKE → Production Services
 ```
+
+### Supported Deployment Methods
+
+1. **Automated Deployment** (Recommended): Use `deploy_to_gcp.sh` for full automation
+2. **Manual Deployment**: Step-by-step GCP Console deployment
+3. **CI/CD Pipeline**: Automated deployments via Cloud Build triggers
 
 ## Step 1: Project Configuration
 
@@ -138,82 +144,54 @@ gcloud secrets add-iam-policy-binding rari-trade-api-secret \
   --role="roles/secretmanager.secretAccessor"
 ```
 
-## Step 4: Build and Deploy
+## Method 1: Automated Deployment (Recommended)
 
-### Automated Deployment Script
-Create `scripts/deploy_cloud.sh`:
+### Quick Start Deployment
+The easiest way to deploy AsterAI to GCP is using the automated deployment script:
 
 ```bash
-#!/bin/bash
+# Make the script executable (first time only)
+chmod +x deploy_to_gcp.sh
 
-# Configuration
-PROJECT_ID="rari-trade-prod"
-SERVICE_NAME="rari-trade-api"
-REGION="us-central1"
-IMAGE_NAME="gcr.io/$PROJECT_ID/$SERVICE_NAME"
-
-echo "🚀 Deploying Rari Trade to Google Cloud Run"
-
-# Build container
-echo "📦 Building container..."
-gcloud builds submit --tag $IMAGE_NAME .
-
-if [ $? -ne 0 ]; then
-    echo "❌ Build failed"
-    exit 1
-fi
-
-# Deploy to Cloud Run
-echo "🚀 Deploying to Cloud Run..."
-gcloud run deploy $SERVICE_NAME \
-  --image $IMAGE_NAME \
-  --platform managed \
-  --region $REGION \
-  --allow-unauthenticated \
-  --port 8080 \
-  --memory 2Gi \
-  --cpu 1 \
-  --max-instances 10 \
-  --min-instances 1 \
-  --concurrency 80 \
-  --timeout 900 \
-  --set-env-vars "ENVIRONMENT=production" \
-  --set-secrets "API_KEY=rari-trade-api-key:latest" \
-  --set-secrets "API_SECRET=rari-trade-api-secret:latest"
-
-if [ $? -eq 0 ]; then
-    echo "✅ Deployment successful!"
-    echo "🌐 Service URL:"
-    gcloud run services describe $SERVICE_NAME --region $REGION --format "value(status.url)"
-else
-    echo "❌ Deployment failed"
-    exit 1
-fi
+# Run the automated deployment
+./deploy_to_gcp.sh
 ```
 
-### Make Script Executable
-```bash
-chmod +x scripts/deploy_cloud.sh
-```
+**What the script does:**
+1. ✅ Checks prerequisites (gcloud, docker, kubectl)
+2. ✅ Creates/configures GCP project
+3. ✅ Enables required APIs
+4. ✅ Creates service account with proper permissions
+5. ✅ Sets up Artifact Registry for Docker images
+6. ✅ Creates Cloud Storage buckets for data/models
+7. ✅ Builds and pushes Docker images
+8. ✅ Creates GKE cluster with GPU node pool
+9. ✅ Deploys all services (trading agents, sentiment analyzer)
+10. ✅ Configures monitoring and logging
 
-### Run Deployment
-```bash
-./scripts/deploy_cloud.sh
-```
+**Expected deployment time:** 15-25 minutes
+**Estimated monthly cost:** ~$585 (GKE + GPU + Storage)
+
+### Manual Deployment Steps
+
+If you prefer manual deployment or need more control:
+
+## Step 1: Project Configuration
 
 **Expected output:**
 ```
-🚀 Deploying Rari Trade to Google Cloud Run
+🚀 Deploying AsterAI to Google Cloud Platform
 📦 Building container...
 Creating temporary tarball...
 Uploading tarball...
 Building container image...
 ✅ Build successful
-🚀 Deploying to Cloud Run...
-Deploying container to Cloud Run service [rari-trade-api]...
-✅ Deployment successful!
-🌐 Service URL:
-https://rari-trade-api-abcdef1234-uc.a.run.app
+🚀 Creating GKE cluster...
+✅ GKE cluster created
+🚀 Deploying services...
+✅ Services deployed successfully!
+🌐 Access your deployment:
+kubectl get pods -n asterai-trading
 ```
 
 ## Step 5: Environment Configuration
@@ -443,19 +421,204 @@ gcloud run services update rari-trade-api \
 - Data in transit uses HTTPS
 - Cloud Storage supports customer-managed encryption keys
 
+## Post-Deployment Configuration
+
+### Update API Keys
+After deployment, you need to update the API keys in Kubernetes secrets:
+
+```bash
+# Update AsterAI API keys
+kubectl edit secret aster-api-keys -n asterai-trading
+
+# Update Gemini API key (for sentiment analysis)
+kubectl edit secret gemini-api-key -n asterai-trading
+```
+
+### Verify Deployment
+```bash
+# Check pod status
+kubectl get pods -n asterai-trading -w
+
+# View logs
+kubectl logs -f deployment/hft-trading-agents -n asterai-trading
+
+# Port forward for local access
+kubectl port-forward svc/hft-trading-service 8080:8080 -n asterai-trading
+```
+
+### Monitor Your System
+```bash
+# Check resource usage
+kubectl top pods -n asterai-trading
+
+# View all services
+kubectl get all -n asterai-trading
+
+# Check persistent volumes
+kubectl get pvc -n asterai-trading
+```
+
+## Troubleshooting
+
+### Common Issues
+
+#### Build Failures
+```bash
+# Check build logs in Cloud Build
+gcloud builds list --limit 5
+gcloud builds log $(gcloud builds list --limit 1 --format "value(ID)")
+```
+
+#### Pod Failures
+```bash
+# Describe pod for error details
+kubectl describe pod POD_NAME -n asterai-trading
+
+# Check events
+kubectl get events -n asterai-trading --sort-by=.metadata.creationTimestamp
+```
+
+#### GPU Issues
+```bash
+# Verify GPU allocation
+kubectl describe node | grep -A 10 "Capacity"
+
+# Check GPU driver installation
+kubectl logs ds/nvidia-driver-installer -n kube-system
+```
+
+#### Network Issues
+```bash
+# Check service endpoints
+kubectl get endpoints -n asterai-trading
+
+# Test service connectivity
+kubectl run test-pod --image=curlimages/curl --rm -i --tty -- sh
+```
+
+## Cost Management
+
+### Monthly Cost Breakdown
+- **GKE Cluster**: $150 (3 nodes n1-standard-4)
+- **GPU Node**: $400 (1 node with L4 GPU)
+- **Storage**: $20 (Cloud Storage buckets)
+- **Network**: $15 (inter-zone traffic)
+- **Total**: ~$585/month
+
+### Cost Optimization Tips
+1. **Auto-scaling**: Configure appropriate min/max nodes
+2. **Spot instances**: Use preemptible VMs for non-critical workloads
+3. **Storage lifecycle**: Set retention policies for old data
+4. **Monitoring**: Use free tier for basic monitoring
+
+## Advanced Features
+
+### CI/CD Pipeline
+Set up automated deployments with Cloud Build triggers:
+
+```bash
+# Create build trigger
+gcloud builds triggers create github \
+  --name=asterai-deploy-trigger \
+  --repository=owner/repo \
+  --branch-pattern=main \
+  --build-config=cloudbuild.yaml
+```
+
+### Multi-Region Deployment
+For high availability across regions:
+
+```bash
+# Deploy to multiple regions
+./deploy_to_gcp.sh --region us-west1
+./deploy_to_gcp.sh --region europe-west1
+```
+
+### Database Integration
+Add PostgreSQL for persistent data:
+
+```bash
+# Create Cloud SQL instance
+gcloud sql instances create asterai-db \
+  --database-version=POSTGRES_14 \
+  --tier=db-f1-micro \
+  --region=us-central1
+```
+
+## Security Best Practices
+
+### Network Security
+```bash
+# Enable VPC-native cluster
+gcloud container clusters update hft-trading-cluster \
+  --enable-ip-alias
+
+# Configure network policies
+kubectl apply -f cloud_deployment/k8s/network-policy.yaml
+```
+
+### Access Control
+```bash
+# Create custom IAM roles
+gcloud iam roles create AsterAI.Deployer \
+  --project=$PROJECT_ID \
+  --permissions=container.clusters.get,container.deployments.get
+```
+
+### Data Encryption
+- All data in Cloud Storage is encrypted by default
+- Use customer-managed encryption keys for sensitive data
+- Enable VPC Service Controls for data exfiltration protection
+
+## Support and Monitoring
+
+### Monitoring Dashboard
+Access the web dashboard at:
+```
+http://localhost:8080 (after port-forward)
+```
+
+### Logging
+```bash
+# View application logs
+kubectl logs -f deployment/hft-trading-agents -n asterai-trading
+
+# View system logs in Cloud Logging
+gcloud logging read "resource.type=k8s_pod" \
+  --filter="resource.labels.namespace_name=asterai-trading" \
+  --limit 50
+```
+
+### Alerting
+Set up alerts for:
+- Pod failures or restarts
+- High resource utilization
+- Trading system errors
+- GPU availability issues
+
 ## Next Steps
 
-### Advanced Features
-1. **Multi-region deployment** for high availability
-2. **CI/CD pipeline** with Cloud Build triggers
-3. **Database integration** with Cloud SQL
-4. **Load balancing** with external HTTP load balancer
+### Production Readiness Checklist
+- [ ] Update all API keys in secrets
+- [ ] Configure proper resource limits
+- [ ] Set up monitoring and alerting
+- [ ] Test end-to-end functionality
+- [ ] Configure backup strategies
+- [ ] Set up CI/CD pipeline
+- [ ] Document operational procedures
 
-### Monitoring Enhancements
-1. **Custom metrics** with Cloud Monitoring
-2. **Log-based alerts** for specific events
-3. **Performance dashboards** in Cloud Monitoring
+### Performance Optimization
+1. **Model Optimization**: Quantize models for faster inference
+2. **Caching**: Implement Redis for frequently accessed data
+3. **CDN**: Use Cloud CDN for global static content
+4. **Auto-scaling**: Fine-tune HPA configurations
+
+### Scaling Considerations
+- Monitor resource usage patterns
+- Scale horizontally by adding more pods
+- Scale vertically by upgrading node types
+- Consider serverless options for burst workloads
 
 ---
 
-*Your Rari Trade system is now running in the cloud with enterprise-grade reliability and scalability.*
+*Your AsterAI trading system is now deployed with enterprise-grade reliability, GPU acceleration, and comprehensive monitoring. Ready for ultra-performance trading operations!* 🚀📈💰

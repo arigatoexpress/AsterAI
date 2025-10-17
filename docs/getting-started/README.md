@@ -1,6 +1,6 @@
-# Getting Started with Rari Trade
+# Getting Started with AsterAI
 
-Welcome to Rari Trade! This guide will walk you through setting up and running your AI trading platform step by step.
+Welcome to AsterAI! This guide will walk you through setting up and running your ultra-performance AI trading platform step by step.
 
 ## Prerequisites
 
@@ -12,16 +12,17 @@ Welcome to Rari Trade! This guide will walk you through setting up and running y
 - **Internet**: Stable broadband connection
 
 ### Hardware Recommendations
-- **CPU**: Intel i5/AMD Ryzen 5 or better
-- **GPU**: NVIDIA RTX 3060 or better (optional, for accelerated training)
-- **Storage**: SSD recommended for faster data processing
+- **CPU**: Intel i7/AMD Ryzen 7 or better (for optimal performance)
+- **GPU**: NVIDIA RTX 5070 Ti or better (optimized for AI training and inference)
+- **Storage**: NVMe SSD recommended for fastest data processing
+- **RAM**: 32GB+ recommended for large model training
 
 ## Step 1: Installation
 
 ### Clone the Repository
 ```bash
-git clone https://github.com/yourusername/rari-trade.git
-cd rari-trade
+git clone https://github.com/yourusername/asterai.git
+cd asterai
 ```
 
 ### Create Virtual Environment
