@@ -1,177 +1,177 @@
-# 🚀 Aster AI - Ultimate AI Trading System
+# Rari Trade - Enterprise-Grade AI Trading Platform
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-red.svg)](https://pytorch.org/)
 [![GCP](https://img.shields.io/badge/GCP-Ready-green.svg)](https://cloud.google.com/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-**The most advanced, self-optimizing AI trading system ever built. Scale from $100 to $10K+ with automated risk management, ensemble AI models, and self-healing infrastructure.**
+**Professional algorithmic trading platform powered by ensemble AI models, advanced risk management, and cloud-native infrastructure. Designed for serious traders seeking automated, scalable trading solutions.**
 
 ---
 
-## 🎯 What Makes This Revolutionary?
+## Core Capabilities
 
-### **Self-Optimizing AI** 🧠
-- **7-Model Ensemble**: PPO, Trend Following, Mean Reversion, Volatility, Order Flow, ML Classifier, VPIN
-- **Adaptive Learning**: Continuous retraining with A/B testing and hyperparameter optimization
-- **Meta-Learning**: Learns optimal model combinations in real-time
-- **Performance Monitoring**: Automatic model switching based on results
+### Advanced AI Ensemble System
+- **Multi-Model Architecture**: Seven specialized trading models (PPO, Trend Following, Mean Reversion, Volatility, Order Flow, ML Classifier, VPIN) working in coordinated ensemble
+- **Adaptive Learning Framework**: Continuous model retraining with systematic A/B testing and hyperparameter optimization
+- **Meta-Learning Engine**: Dynamically learns optimal model weight combinations based on market conditions
+- **Performance-Based Model Selection**: Automatic switching between models based on real-time performance metrics
 
-### **Self-Healing Infrastructure** 🛡️
-- **Data Pipeline**: Automatic gap filling, corruption repair, quality monitoring
-- **Endpoint Management**: Circuit breakers, failover, load balancing
-- **99.9% Uptime**: Designed for maximum reliability
-- **Real-Time Monitoring**: Dashboards and alerting for complete visibility
+### Enterprise-Grade Infrastructure
+- **Self-Healing Data Pipeline**: Automated gap filling, data corruption repair, and quality assurance monitoring
+- **Fault-Tolerant Architecture**: Circuit breakers, automatic failover, and intelligent load balancing
+- **High-Availability Design**: Built for 99.9% uptime with comprehensive monitoring and alerting
+- **Real-Time Observability**: Complete system visibility through advanced dashboards and automated notifications
 
-### **Self-Scaling Capital** 📈
-- **Start with $100**: Conservative initial risk management
-- **Scale to $10K+**: Performance-based progressive scaling
-- **4 Capital Levels**: Automatic risk adjustment as capital grows
-- **Profit Reinvestment**: Automated compounding strategy
+### Intelligent Capital Scaling
+- **Conservative Starting Position**: Begins with $100 using highly conservative risk parameters
+- **Performance-Driven Growth**: Progressive scaling based on proven track record and risk-adjusted returns
+- **Four-Tier Capital Structure**: Automatic risk adjustment across capital growth stages
+- **Automated Compounding**: Systematic reinvestment of profits with optimized position sizing
 
-### **Self-Protecting Risk Management** 🛡️
-- **Kelly Criterion**: Optimal position sizing
-- **Dynamic Adjustment**: Volatility-based sizing
-- **Emergency Controls**: Multiple kill switches and circuit breakers
-- **Real-Time VaR**: Continuous risk monitoring
-
----
-
-## 🏆 Key Features
-
-✨ **Ensemble AI System**
-- 7 different trading models working in harmony
-- Meta-learner optimizes model weights dynamically
-- Correlation-aware diversification
-- Consensus-based signal generation
-
-✨ **Real-Time Data Collection**
-- Aster DEX WebSocket streaming
-- Order book reconstruction
-- Trade flow analysis
-- Funding rate monitoring
-
-✨ **Advanced Backtesting**
-- Walk-forward analysis
-- Monte Carlo simulation (10,000+ scenarios)
-- Realistic market simulation
-- Look-ahead bias prevention
-
-✨ **Production Deployment**
-- GCP infrastructure (Docker, Kubernetes, CI/CD)
-- Paper trading validation (7-day protocol)
-- Live trading with capital scaling
-- GPU acceleration (RTX 5070 Ti optimized)
+### Comprehensive Risk Management
+- **Mathematical Position Sizing**: Kelly Criterion optimization for theoretically optimal position sizing
+- **Dynamic Risk Adjustment**: Volatility-based sizing that adapts to market conditions
+- **Multi-Layer Safety Controls**: Redundant kill switches, circuit breakers, and emergency protocols
+- **Real-Time Risk Monitoring**: Continuous Value at Risk (VaR) calculation and position monitoring
 
 ---
 
-## 📊 Performance Targets
+## Key Features
 
-| Metric | Target | Status |
-|--------|--------|--------|
-| Win Rate | 60%+ | ✅ Ensemble Advantage |
-| Sharpe Ratio | 1.5+ | ✅ Risk-Adjusted |
-| Max Drawdown | <10% | ✅ Protected |
-| Monthly Returns | 15-25% | ✅ Conservative |
-| Daily Loss Limit | <3% | ✅ Controlled |
+### Ensemble AI Trading System
+- Seven distinct trading models operating in coordinated ensemble formation
+- Dynamic meta-learning optimizes model weight allocation in real-time
+- Correlation-aware diversification prevents model overfitting
+- Consensus-based signal generation improves prediction accuracy
+
+### Real-Time Market Data
+- Direct WebSocket streaming from DEX protocols
+- Complete order book reconstruction and analysis
+- Real-time trade flow and volume analysis
+- Funding rate monitoring and arbitrage opportunities
+
+### Advanced Backtesting Framework
+- Walk-forward analysis with out-of-sample validation
+- Monte Carlo simulation with 10,000+ market scenarios
+- Realistic slippage and transaction cost modeling
+- Systematic prevention of look-ahead bias and overfitting
+
+### Production-Ready Deployment
+- Cloud-native infrastructure on Google Cloud Platform
+- Comprehensive paper trading validation protocols
+- Automated capital scaling from $100 to $10K+
+- GPU-accelerated training and inference (NVIDIA RTX optimized)
 
 ---
 
-## 🚀 Quick Start
+## Performance Specifications
 
-### **Prerequisites**
+| Risk-Adjusted Metric | Target Range | Validation Status |
+|---------------------|--------------|-------------------|
+| Win Rate | 60%+ | ✅ Ensemble Model Advantage |
+| Sharpe Ratio | 1.5+ | ✅ Risk-Adjusted Returns |
+| Maximum Drawdown | <10% | ✅ Capital Protection |
+| Monthly Target Return | 15-25% | ✅ Conservative Growth |
+| Daily Loss Limit | <3% | ✅ Risk Control |
+
+---
+
+## Getting Started
+
+### Prerequisites
 ```bash
-# Python 3.11+
+# Python 3.11 or higher
 python --version
 
-# GPU (Optional but recommended)
+# GPU support (recommended for model training)
 nvidia-smi
 
-# GCP Account (for production deployment)
+# Google Cloud Platform account (for production deployment)
 gcloud --version
 ```
 
-### **Installation**
+### Installation
 ```bash
-# Clone repository
-git clone https://github.com/yourusername/AsterAI.git
-cd AsterAI
+# Clone the repository
+git clone https://github.com/yourusername/rari-trade.git
+cd rari-trade
 
-# Create virtual environment
-python -m venv asterai_env
-source asterai_env/bin/activate  # Windows: asterai_env\Scripts\activate
+# Create Python virtual environment
+python -m venv rari_trade_env
+source rari_trade_env/bin/activate  # Windows: rari_trade_env\Scripts\activate
 
-# Install dependencies
+# Install core dependencies
 pip install -r requirements.txt
 
-# Install GPU support (if CUDA available)
-pip install -r requirements/requirements-gpu.txt
+# Install GPU acceleration (if CUDA-compatible GPU available)
+pip install -r requirements-gpu.txt
 ```
 
-### **Configuration**
+### Configuration
 ```bash
-# Setup API keys
+# Configure API credentials
 cp config/api_keys_template.json config/api_keys.json
-# Edit config/api_keys.json with your credentials
+# Edit config/api_keys.json with your exchange API credentials
 
 # Configure trading parameters
 cp config/trading_config_template.json config/trading_config.json
-# Adjust risk parameters as needed
+# Review and adjust risk management parameters as needed
 ```
 
 ---
 
-## 📈 Usage
+## Usage Guide
 
-### **1. Paper Trading Validation** (Recommended)
+### Phase 1: Paper Trading Validation (Required)
 ```bash
-# Run 7-day paper trading validation
+# Execute comprehensive paper trading validation
 python scripts/setup_paper_trading.py
 
-# Expected results:
-# - Sharpe Ratio > 1.5
-# - Win Rate > 55%
-# - Max Drawdown < 10%
-# - 50+ trades in 7 days
+# Validation criteria:
+# - Sharpe Ratio: > 1.5 (risk-adjusted returns)
+# - Win Rate: > 55% (trade success rate)
+# - Maximum Drawdown: < 10% (capital preservation)
+# - Minimum Trades: 50+ (statistical significance)
 ```
 
-### **2. Live Trading Deployment**
+### Phase 2: Live Trading Deployment
 ```bash
-# Start live trading with $100
+# Initiate live trading with conservative $100 starting capital
 python scripts/deploy_live_trading.py
 
-# Monitor dashboard
+# Access monitoring dashboard
 # http://localhost:8080/status
 
-# View performance
+# Review performance analytics
 # http://localhost:8080/performance
 ```
 
-### **3. GCP Production Deployment**
+### Phase 3: Cloud Production Deployment
 ```bash
-# Setup GCP infrastructure
+# Configure Google Cloud Platform infrastructure
 export PROJECT_ID="your-gcp-project-id"
 python scripts/setup_gcp_deployment.py --project-id $PROJECT_ID
 
-# Deploy to production
-gcloud run deploy aster-trading-api \
-  --image gcr.io/$PROJECT_ID/aster-trading-system \
+# Deploy to production environment
+gcloud run deploy rari-trade-api \
+  --image gcr.io/$PROJECT_ID/rari-trade-system \
   --platform managed \
   --region us-central1
 ```
 
 ---
 
-## 🏗️ System Architecture
+## System Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    ASTER AI TRADING SYSTEM                   │
+│                 RARI TRADE AI TRADING PLATFORM               │
 ├─────────────────────────────────────────────────────────────┤
 │                                                               │
 │  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐  │
-│  │ Self-Healing │───▶│  Aster DEX   │───▶│  Ensemble AI │  │
-│  │ Data Pipeline│    │  Real-Time   │    │  7 Models    │  │
+│  │ Self-Healing │───▶│   DEX Market  │───▶│  Ensemble AI │  │
+│  │ Data Pipeline│    │  Real-Time    │    │  7 Models    │  │
 │  └──────────────┘    └──────────────┘    └──────────────┘  │
 │         │                    │                    │          │
 │         └────────────────────┼────────────────────┘          │
@@ -183,7 +183,7 @@ gcloud run deploy aster-trading-api \
 │                              │                               │
 │                     ┌────────▼────────┐                      │
 │                     │  Live Trading   │                      │
-│                     │  $100 → $10K    │                      │
+│                     │  $100 → $10K+   │                      │
 │                     └─────────────────┘                      │
 │                                                               │
 └─────────────────────────────────────────────────────────────┘
@@ -191,40 +191,41 @@ gcloud run deploy aster-trading-api \
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
-AsterAI/
-├── mcp_trader/                    # Core trading system
-│   ├── ai/                        # AI models and ensemble
-│   │   ├── ensemble_trading_system.py      # 7-model ensemble
-│   │   ├── adaptive_retraining_system.py   # Self-learning
-│   │   ├── ppo_trading_model.py            # RL model
-│   │   └── vpin_calculator.py              # HFT indicator
-│   ├── backtesting/               # Backtesting engines
-│   │   ├── walk_forward_analysis.py        # WFA
-│   │   └── monte_carlo_simulation.py       # Monte Carlo
-│   ├── data/                      # Data infrastructure
-│   │   ├── self_healing_data_manager.py    # Self-healing
-│   │   └── aster_dex_realtime_collector.py # Real-time
+rari-trade/
+├── mcp_trader/                    # Core trading engine
+│   ├── ai/                        # Machine learning models
+│   │   ├── ensemble_trading_system.py      # Multi-model ensemble
+│   │   ├── adaptive_retraining_system.py   # Continuous learning
+│   │   ├── ppo_trading_model.py            # Reinforcement learning
+│   │   └── vpin_calculator.py              # Volume-based indicators
+│   ├── backtesting/               # Validation frameworks
+│   │   ├── walk_forward_analysis.py        # Out-of-sample testing
+│   │   └── monte_carlo_simulation.py       # Risk simulation
+│   ├── data/                      # Data management
+│   │   ├── self_healing_data_manager.py    # Data quality assurance
+│   │   └── dex_realtime_collector.py       # Market data streaming
 │   └── risk/                      # Risk management
-│       └── dynamic_position_sizing.py      # Position sizing
-├── scripts/                       # Deployment scripts
-│   ├── setup_paper_trading.py     # Paper trading
-│   ├── deploy_live_trading.py     # Live deployment
-│   └── setup_gcp_deployment.py    # GCP setup
-├── config/                        # Configuration files
-├── data/                          # Historical data
-├── models/                        # Saved models
+│       └── dynamic_position_sizing.py      # Kelly criterion sizing
+├── scripts/                       # Deployment utilities
+│   ├── setup_paper_trading.py     # Simulation validation
+│   ├── deploy_live_trading.py     # Production deployment
+│   └── setup_gcp_deployment.py    # Cloud infrastructure
+├── config/                        # Configuration management
+├── data/                          # Historical market data
+├── models/                        # Trained model artifacts
+├── docs/                          # Documentation
 ├── requirements.txt               # Python dependencies
-└── README.md                      # This file
+└── README.md                      # Project documentation
 ```
 
 ---
 
-## 🔧 Configuration
+## Configuration Management
 
-### **Trading Parameters**
+### Trading Parameters
 ```json
 {
   "initial_capital": 100.0,
@@ -236,185 +237,166 @@ AsterAI/
 }
 ```
 
-### **Capital Scaling Levels**
+### Capital Scaling Framework
 ```
-Level 1: $0-$500    (Risk: 0.5%, Position: 10%)
-Level 2: $500-$2K   (Risk: 1.0%, Position: 15%)
-Level 3: $2K-$5K    (Risk: 1.5%, Position: 20%)
-Level 4: $5K-$10K   (Risk: 2.0%, Position: 25%)
+Tier 1: $0-$500    (Risk: 0.5%, Position Size: 10%)
+Tier 2: $500-$2K   (Risk: 1.0%, Position Size: 15%)
+Tier 3: $2K-$5K    (Risk: 1.5%, Position Size: 20%)
+Tier 4: $5K-$10K+  (Risk: 2.0%, Position Size: 25%)
 ```
 
 ---
 
-## 🧪 Testing
+## Quality Assurance
 
-### **Unit Tests**
+### Automated Testing Suite
 ```bash
-# Run all tests
+# Execute complete test suite
 pytest tests/
 
-# Run specific test
+# Run specific component tests
 pytest tests/test_ensemble_system.py
 
-# Run with coverage
+# Generate coverage reports
 pytest --cov=mcp_trader tests/
 ```
 
-### **Backtesting**
+### Backtesting Validation
 ```bash
-# Walk-forward analysis
+# Perform walk-forward analysis
 python scripts/walk_forward_analysis.py
 
-# Monte Carlo simulation
+# Execute Monte Carlo risk simulation
 python scripts/monte_carlo_simulation.py
 ```
 
 ---
 
-## 📊 Monitoring & Alerts
+## Monitoring & Alerting
 
-### **Real-Time Dashboard**
-- Portfolio value and P&L
-- Active positions and orders
-- Risk metrics (VaR, drawdown)
-- Trading statistics
-- System health
+### Real-Time Dashboard
+- Portfolio valuation and profit/loss tracking
+- Active position and order management
+- Risk metrics (Value at Risk, drawdown analysis)
+- Trading performance statistics
+- System health and infrastructure monitoring
 
-### **Alerts**
-- Trade executions
-- Stop-loss triggers
-- Emergency events
-- Performance milestones
-- System errors
-
----
-
-## 🛡️ Safety Features
-
-### **Emergency Controls**
-- ✅ Kill Switch (10% drawdown)
-- ✅ Circuit Breaker (extreme volatility)
-- ✅ Daily Loss Limit (3%)
-- ✅ Position Limits
-- ✅ Automatic Risk Reduction
-
-### **Risk Management**
-- ✅ Kelly Criterion Sizing
-- ✅ Volatility Adjustment
-- ✅ Correlation Control
-- ✅ Real-Time VaR
-- ✅ Emergency Stops
+### Automated Alerting System
+- Trade execution confirmations
+- Stop-loss and take-profit triggers
+- Emergency protocol activations
+- Performance milestone achievements
+- System error and anomaly detection
 
 ---
 
-## 📚 Documentation
+## Risk Management Framework
 
-- [**Deployment Guide**](ULTIMATE_TRADING_SYSTEM_DEPLOYMENT_GUIDE.md) - Complete deployment instructions
-- [**System Summary**](DEPLOYMENT_COMPLETE_SUMMARY.md) - Detailed system overview
-- [**Self-Healing Guide**](SELF_HEALING_SYSTEM_GUIDE.md) - Data pipeline documentation
-- [**API Documentation**](docs/API.md) - API reference (coming soon)
+### Emergency Protection Systems
+- Capital preservation kill switch (10% drawdown threshold)
+- Volatility-based circuit breaker
+- Daily loss limit controls (3% maximum)
+- Position size restrictions
+- Automatic risk reduction protocols
+
+### Advanced Risk Controls
+- Kelly Criterion position sizing optimization
+- Market volatility adaptive adjustments
+- Cross-asset correlation monitoring
+- Real-time Value at Risk calculations
+- Multi-layer emergency stop mechanisms
 
 ---
 
-## 🔐 Security
+## Documentation
 
-- ✅ API keys stored in GCP Secret Manager
-- ✅ Encrypted data transmission
-- ✅ Service account authentication
-- ✅ No hardcoded credentials
-- ✅ Secure webhook endpoints
+- [**Getting Started Guide**](docs/getting-started/) - Complete setup and installation instructions
+- [**Technical Documentation**](docs/technical/) - Detailed system architecture and API reference
+- [**Deployment Guide**](docs/deployment/) - Cloud and local deployment procedures
+- [**Troubleshooting**](docs/troubleshooting/) - Common issues and solutions
 
 ---
 
-## 🤝 Contributing
+## Security & Compliance
 
-Contributions welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
+- API credentials secured in GCP Secret Manager
+- End-to-end encrypted data transmission
+- Service account-based authentication
+- Zero hardcoded sensitive information
+- Secure webhook endpoint validation
+
+---
+
+## Contributing
+
+We welcome contributions from the community. Please review our [Contributing Guidelines](CONTRIBUTING.md) before submitting changes.
 
 1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open Pull Request
+2. Create a feature branch (`git checkout -b feature/enhancement-name`)
+3. Commit your changes (`git commit -m 'Add enhancement description'`)
+4. Push to the branch (`git push origin feature/enhancement-name`)
+5. Open a Pull Request
 
 ---
 
-## 📄 License
+## License
 
-This project is licensed under the MIT License - see [LICENSE](LICENSE) file for details.
-
----
-
-## ⚠️ Risk Warning
-
-**Trading involves substantial risk of loss. This system is provided for educational and research purposes. Past performance does not guarantee future results. Never invest more than you can afford to lose. Always conduct thorough testing before live deployment.**
+This project is licensed under the MIT License - see [LICENSE](LICENSE) file for complete terms.
 
 ---
 
-## 🌟 Star History
+## Risk Disclosure
 
-If you find this project useful, please consider giving it a ⭐!
-
----
-
-## 📞 Support
-
-- **Issues**: [GitHub Issues](https://github.com/yourusername/AsterAI/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/AsterAI/discussions)
-- **Email**: support@asterai.com
+**Algorithmic trading involves significant financial risk. This platform is provided for educational and research purposes only. Historical performance does not guarantee future results. Never risk more capital than you can afford to lose. Always perform comprehensive backtesting and paper trading validation before live deployment.**
 
 ---
 
-## 🎯 Roadmap
+## Support
 
-- [x] Self-healing data pipeline
-- [x] 7-model ensemble system
-- [x] Adaptive retraining
-- [x] Dynamic risk management
-- [x] GCP deployment
-- [x] Paper trading validation
-- [x] Live trading ($100 → $10K)
-- [ ] Multi-exchange support
-- [ ] Advanced sentiment analysis
-- [ ] Deep learning models (Transformer)
-- [ ] Mobile monitoring app
+- **Bug Reports**: [GitHub Issues](https://github.com/yourusername/rari-trade/issues)
+- **Community Discussions**: [GitHub Discussions](https://github.com/yourusername/rari-trade/discussions)
+- **Documentation**: [docs/](docs/) directory
 
 ---
 
-## 🏆 Achievements
+## Development Roadmap
 
-✨ **Most Advanced**: 7 AI models in ensemble
-✨ **Most Robust**: Self-healing infrastructure
-✨ **Most Scalable**: $100 → $10K automation
-✨ **Most Secure**: Multiple safety layers
-✨ **Most Complete**: Production-ready system
-
----
-
-## 🙏 Acknowledgments
-
-- Built with cutting-edge AI and financial engineering
-- Inspired by the best practices in algorithmic trading
-- Powered by Python, PyTorch, and GCP
-- Optimized for NVIDIA RTX 5070 Ti
+- [x] Self-healing data pipeline implementation
+- [x] Seven-model ensemble trading system
+- [x] Adaptive model retraining framework
+- [x] Dynamic risk management system
+- [x] Google Cloud Platform deployment
+- [x] Paper trading validation protocols
+- [x] Live trading automation ($100 → $10K+)
+- [ ] Multi-exchange connectivity
+- [ ] Advanced sentiment analysis integration
+- [ ] Transformer-based deep learning models
+- [ ] Mobile monitoring application
 
 ---
 
-**Made with ❤️ and ☕ by the Aster AI Team**
+## System Capabilities
 
-*Transform $100 into $10K+ with intelligent, automated trading!* 🚀📈💰
+- **Most Advanced**: Seven specialized AI models in coordinated ensemble
+- **Most Robust**: Self-healing infrastructure with automatic fault recovery
+- **Most Scalable**: Automated capital growth from $100 to $10K+
+- **Most Secure**: Multi-layer security and risk management protocols
+- **Most Complete**: Production-ready enterprise trading platform
 
 ---
 
-## 📈 Get Started Now!
+## Technology Stack
 
-```bash
-# Quick start - Paper Trading
-git clone https://github.com/yourusername/AsterAI.git
-cd AsterAI
-pip install -r requirements.txt
-python scripts/setup_paper_trading.py
+- **Programming Language**: Python 3.11+
+- **Machine Learning**: PyTorch, scikit-learn
+- **Data Processing**: pandas, numpy
+- **Infrastructure**: Google Cloud Platform
+- **Hardware Acceleration**: NVIDIA CUDA (RTX 5070 Ti optimized)
+- **Containerization**: Docker
+- **Orchestration**: Kubernetes
 
-# Watch it trade! 🚀
-```
+---
 
-**Ready to revolutionize your trading? Let's go!** 🎉
+**Developed by the Rari Trade Engineering Team**
+
+*Enterprise-grade algorithmic trading powered by advanced AI and rigorous risk management.*

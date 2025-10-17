@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "aster-ai-trading"
+name = "rari-trade"
 version = "0.1.0"
-description = "AI-powered high-frequency trading system for Aster DEX"
+description = "Enterprise-grade AI trading platform powered by ensemble models and advanced risk management"
 readme = "README.md"
 requires-python = ">=3.10"
 classifiers = [
@@ -79,10 +79,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/aster-ai-trading"
-Repository = "https://github.com/yourusername/aster-ai-trading"
-Documentation = "https://aster-ai-trading.readthedocs.io/"
-Issues = "https://github.com/yourusername/aster-ai-trading/issues"
+Homepage = "https://github.com/yourusername/rari-trade"
+Repository = "https://github.com/yourusername/rari-trade"
+Documentation = "https://rari-trade.readthedocs.io/"
+Issues = "https://github.com/yourusername/rari-trade/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -106,8 +106,8 @@ extend-exclude = '''
   | \.venv
   | build
   | dist
-  | asterai_env
-  | asterai_env_fresh
+  | rari_trade_env
+  | rari_trade_env_fresh
 )/
 '''
 
@@ -116,7 +116,7 @@ profile = "black"
 multi_line_output = 3
 line_length = 100
 known_first_party = ["mcp_trader"]
-skip = ["asterai_env", "asterai_env_fresh", "__pycache__"]
+skip = ["rari_trade_env", "rari_trade_env_fresh", "__pycache__"]
 
 [tool.flake8]
 max-line-length = 100
@@ -126,8 +126,8 @@ exclude = [
     "__pycache__",
     "build",
     "dist",
-    "asterai_env",
-    "asterai_env_fresh",
+    "rari_trade_env",
+    "rari_trade_env_fresh",
     "*.egg-info",
 ]
 
@@ -161,7 +161,7 @@ module = [
 ignore_missing_imports = true
 
 [tool.bandit]
-exclude_dirs = ["tests", "asterai_env", "asterai_env_fresh"]
+exclude_dirs = ["tests", "rari_trade_env", "rari_trade_env_fresh"]
 skips = ["B101", "B601"]  # Skip assert checks and shell usage
 
 [tool.pytest.ini_options]
@@ -185,8 +185,8 @@ source = ["mcp_trader"]
 omit = [
     "*/tests/*",
     "*/test_*.py",
-    "*/asterai_env/*",
-    "*/asterai_env_fresh/*",
+    "*/rari_trade_env/*",
+    "*/rari_trade_env_fresh/*",
 ]
 
 [tool.coverage.report]
