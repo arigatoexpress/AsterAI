@@ -1,6 +1,6 @@
 """
-Rari Trade AI - Autonomous Aster DEX Trading Platform
-Focused on maximizing profits through intelligent grid trading and risk management.
+Rari Trade - Enterprise AI Trading Platform
+Advanced algorithmic trading with ensemble AI models and comprehensive risk management.
 """
 
 __version__ = "2.0.0"

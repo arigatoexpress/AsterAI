@@ -1,9 +1,9 @@
 #!/bin/bash
-# Deploy Aster AI Trading Dashboard to Google Cloud Platform
+# Deploy Rari Trade Trading Dashboard to Google Cloud Platform
 
 set -e
 
-echo "🚀 Deploying Aster AI Trading Dashboard to GCP..."
+echo "🚀 Deploying Rari Trade Trading Dashboard to GCP..."
 echo "==============================================="
 
 # Configuration
