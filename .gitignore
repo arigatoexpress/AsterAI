@@ -329,6 +329,8 @@ pyproject.toml
 README.md
 docs/
 SECURITY.md
+CONTRIBUTING.md
+LICENSE
 
 # Scripts
 scripts/
@@ -343,3 +345,8 @@ backtesting/
 
 # Tests
 tests/
+
+# Deployment files
+deploy-production.sh
+cloud-run-env-vars.yaml
+setup-cloud-build.md
