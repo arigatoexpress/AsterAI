@@ -390,17 +390,17 @@ async def main():
         print(f"   Spot assets: {len([a for a in all_assets.values() if a.get('type') == 'spot'])}")
         print(f"   Perpetual assets: {len([a for a in all_assets.values() if a.get('type') == 'perpetual'])}")
 
-        print("\n🎯 Top 10 Trainable Assets:")
+        print("\nTop 10 Trainable Assets:")
         top_assets = report_df.head(10)
         for _, row in top_assets.iterrows():
-            print(f"   ✅ {row['symbol']:12} | Type: {row['type']:9} | Quality: {row['data_quality_score']:.2f}")
+            print(f"   {row['symbol']:12} | Type: {row['type']:9} | Quality: {row['data_quality_score']:.2f}")
 
-        print("\n📋 Report saved:")
+        print("\nReport saved:")
         print(f"   {report_file}")
 
         print("""
 ================================================================================
-                    🎉 Discovery Complete!
+                    Discovery Complete!
      Ready for training with real Aster DEX data only
 ================================================================================
 

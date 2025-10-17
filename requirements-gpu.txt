@@ -1,0 +1,43 @@
+# GPU-Accelerated Dependencies for RTX 5070 Ti
+# Optimized for Blackwell architecture (sm_120)
+
+# Core GPU frameworks
+torch>=2.0.0+cu121
+torchvision>=0.15.0+cu121
+torchaudio>=2.0.0+cu121
+
+# JAX with CUDA support
+jax[cuda12]==0.4.20
+jaxlib>=0.4.20
+
+# TensorRT for model optimization
+tensorrt>=8.6.1
+onnx-tensorrt>=8.6.1
+
+# ONNX Runtime with GPU support
+onnxruntime-gpu>=1.16.0
+
+# CuPy for GPU-accelerated NumPy operations
+cupy-cuda12x>=12.0.0
+
+# CUDA-aware libraries
+cuda-python>=12.0.0
+
+# GPU-accelerated data processing
+cudf-cu12>=24.0.0
+cuml-cu12>=24.0.0
+
+# GPU-accelerated visualization (optional)
+# plotly>=5.17.0
+# matplotlib>=3.8.0
+
+# GPU monitoring and profiling
+nvidia-ml-py>=12.0.0
+pynvml>=11.5.0
+
+# GPU memory management
+memory-profiler>=0.61.0
+
+# High-performance computing
+numba>=0.58.0
+scipy>=1.11.0

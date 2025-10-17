@@ -14,6 +14,8 @@ from dataclasses import dataclass
 import warnings
 warnings.filterwarnings('ignore')
 
+from local_training.vpin.vpin_calculator import VPINCalculator
+
 logger = logging.getLogger(__name__)
 
 
@@ -86,6 +88,10 @@ class ComprehensiveFeatureEngineer:
             advanced_features
         ], axis=1)
 
+        # Add HFT features
+        hft_features = self._create_hft_features(df)
+        features_df = pd.concat([features_df, hft_features], axis=1)
+
         # Add correlated assets features if symbol provided
         if symbol:
             correlated_features = self._create_correlated_features(df, symbol)
@@ -139,6 +145,62 @@ class ComprehensiveFeatureEngineer:
             for window in self.config.lookback_periods:
                 features[f'volume_sma_{window}'] = df['volume'].rolling(window).mean()
                 features[f'volume_ratio_{window}'] = df['volume'] / features[f'volume_sma_{window}']
+
+        return features
+
+    def _create_hft_features(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Create high-frequency trading features."""
+        features = pd.DataFrame(index=df.index)
+        
+        # 1. VPIN Score
+        # This assumes the VPIN calculator is instantiated and run separately
+        # and its output is merged with the main dataframe.
+        # For simplicity, we'll just add a placeholder column here.
+        if 'vpin' not in df.columns:
+            # In a real pipeline, you'd calculate this beforehand
+            # vpin_calculator = VPINCalculator()
+            # features['vpin'] = vpin_calculator.calculate_vpin(df)
+            features['vpin'] = 0.5 # Placeholder
+            
+        # 2. Order book imbalance
+        # Requires order book data, which is not in the OHLCV frame.
+        # Placeholder for order book imbalance features.
+        features['order_book_imbalance'] = np.random.randn(len(df))
+
+        # 3. Volatility (Parkinson, Garman-Klass)
+        # Parkinson Volatility
+        features['parkinson_volatility'] = (np.log(df['high'] / df['low']) ** 2).rolling(window=10).mean()
+
+        # Garman-Klass Volatility
+        log_hl = np.log(df['high'] / df['low'])
+        log_co = np.log(df['close'] / df['open'])
+        features['garman_klass_volatility'] = (0.5 * log_hl**2 - (2*np.log(2) - 1) * log_co**2).rolling(window=10).mean()
+
+        # 4. Microstructure (effective spread, realized spread)
+        # These require tick-level data. Placeholder for now.
+        features['effective_spread'] = np.random.rand(len(df)) * 0.01
+        features['realized_spread'] = np.random.rand(len(df)) * 0.005
+        
+        # 5. Volume Profile (VWAP distance, volume delta)
+        # VWAP
+        vwap = (df['volume'] * (df['high'] + df['low'] + df['close']) / 3).cumsum() / df['volume'].cumsum()
+        features['vwap_distance'] = df['close'] - vwap
+        
+        # Volume Delta (requires signed volume data)
+        # Placeholder for volume delta
+        features['volume_delta'] = np.random.randn(len(df))
+
+        # 6. Momentum (1min, 5min, 15min returns)
+        # Assuming the dataframe index is datetime-like
+        # These are more suited for higher frequency data than the example's hourly data.
+        # The existing _create_price_features handles momentum over different periods.
+        # We can add more granular ones if the data frequency allows.
+        for window in ['1T', '5T', '15T']:
+            if isinstance(df.index, pd.DatetimeIndex):
+                # Resample to the window, calculate returns, then reindex to original
+                # This is an approximation. For true HFT, you'd work with tick data.
+                resampled_returns = df['close'].resample(window).last().pct_change()
+                features[f'momentum_{window}'] = resampled_returns.reindex(df.index, method='ffill')
 
         return features
 

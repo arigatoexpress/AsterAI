@@ -477,15 +477,15 @@ async def main():
             print(f"   • Expected throughput: {settings['expected_throughput_req_per_sec']:.2f} req/s")
 
         if analysis['warnings']:
-            print(f"\n⚠️  Warnings ({len(analysis['warnings'])}):")
+            print(f"\nWarnings ({len(analysis['warnings'])}):")
             for warning in analysis['warnings']:
                 print(f"   • {warning}")
 
-        print(f"\n📋 Full report saved to: {report_file}")
+        print(f"\nFull report saved to: {report_file}")
 
         print("""
 ================================================================================
-                   🎉 Rate Limit Testing Complete!
+                   Rate Limit Testing Complete!
     Ready to collect real Aster DEX data safely and reliably
 ================================================================================
 

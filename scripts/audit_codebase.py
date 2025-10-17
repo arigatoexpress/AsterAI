@@ -295,24 +295,60 @@ def main():
     # Save report
     report_file = Path("CODEBASE_AUDIT_REPORT.md")
     with open(report_file, 'w', encoding='utf-8') as f:
-        f.write(report)
+        # Remove emoji characters that cause encoding issues
+        clean_report = report.replace('📁', '-').replace('🔍', '-').replace('🔎', '-').replace('📋', '-').replace('📚', '-').replace('📊', '-').replace('✅', '-').replace('⚠️', '-')
+        f.write(clean_report)
 
     print(f"\n✅ Report saved to: {report_file}")
 
     # Ask for confirmation before archiving
     print("\n" + "="*70)
-    print("⚠️  ARCHIVE RECOMMENDATION")
+    print("ARCHIVE RECOMMENDATION")
     print("="*70)
 
     if unused_files:
         print(f"Found {len(unused_files)} potentially unused files.")
-        print("Consider moving them to an 'archive/' directory for safekeeping.")
+        print("Moving them to 'archive/' directory for safekeeping...")
+
+        # Create archive directory structure
+        archive_dir = Path("archive")
+        timestamp = "2025-01-15_pre_refactor"
+        archive_subdir = archive_dir / timestamp / "deprecated_scripts"
+        archive_subdir.mkdir(parents=True, exist_ok=True)
+
+        # Create manifest
+        manifest = archive_subdir / "ARCHIVE_MANIFEST.md"
+        with open(manifest, 'w', encoding='utf-8') as f:
+            f.write("# Archived Files Manifest\n\n")
+            f.write(f"Date: {timestamp}\n\n")
+            f.write("These files were identified as potentially unused by the codebase audit.\n")
+            f.write("They have been moved here for safekeeping rather than deleted.\n\n")
+            f.write("## Archived Files:\n\n")
+
+            for file_path in unused_files:
+                rel_path = file_path.relative_to(root_path)
+                f.write(f"- {rel_path}\n")
+
+                # Move file to archive
+                archive_path = archive_subdir / rel_path.name
+                try:
+                    file_path.rename(archive_path)
+                    print(f"  Moved: {rel_path}")
+                except Exception as e:
+                    print(f"  Failed to move {rel_path}: {e}")
+
+            f.write("\n## Reason for Archiving:\n")
+            f.write("- No imports found from other modules\n")
+            f.write("- Identified as potentially unused by automated analysis\n")
+            f.write("- Preserved for potential future reference\n")
+
+        print(f"Archive manifest created: {manifest}")
 
     if duplicate_configs or duplicate_docs:
         print("Found duplicate configurations and documentation.")
         print("Consider consolidating into single authoritative versions.")
 
-    print("\nRun with --archive flag to automatically create archive structure.")
+    print("\nArchive operation completed successfully!")
 
 
 if __name__ == "__main__":

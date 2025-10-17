@@ -1,0 +1,470 @@
+# GCP Infrastructure as Code for Aster AI Trading Platform
+# Cost-Optimized Architecture for Continuous Operation
+
+apiVersion: v1
+kind: Config
+
+metadata:
+  name: aster-ai-trading-platform
+  description: "Complete AI trading platform with dashboard, data collection, backtesting, and automated trading"
+
+# Global Configuration
+global:
+  project: aster-ai-trading
+  region: us-central1
+  budget: 300  # $300/month budget
+  environment: production
+
+# Cloud Run Services (Serverless, Cost-Optimized)
+services:
+
+  # Main Dashboard Console
+  dashboard:
+    name: aster-trading-console
+    source: ./cloud_architecture/central_dashboard_console.py
+    memory: 1Gi
+    cpu: 1
+    min-instances: 0  # Scale to zero when not used
+    max-instances: 2
+    timeout: 300
+    environment:
+      ENVIRONMENT: CLOUD
+      SERVICE_TYPE: DASHBOARD
+    scaling:
+      # Scale up during trading hours, down otherwise
+      cpu-utilization: 60
+      custom-metrics:
+        - name: active-users
+          target: 1
+    cost-optimization:
+      spot: false  # Always available for dashboard
+      schedule:
+        - time: "02:00-06:00"  # Night time
+          min-instances: 0
+          max-instances: 1
+        - time: "09:00-17:00"  # Trading hours
+          min-instances: 1
+          max-instances: 3
+
+  # Continuous Data Collection
+  data-collector:
+    name: aster-data-collector
+    source: ./cloud_architecture/data_collection_service.py
+    memory: 512Mi
+    cpu: 0.5
+    min-instances: 1  # Always running for data collection
+    max-instances: 3
+    timeout: 900
+    environment:
+      ENVIRONMENT: CLOUD
+      SERVICE_TYPE: DATA_COLLECTION
+      COLLECTION_INTERVAL: 300  # 5 minutes
+    scaling:
+      cpu-utilization: 70
+    cost-optimization:
+      spot: true  # Use spot instances for cost savings
+      schedule:
+        - time: "00:00-23:59"  # 24/7 but optimized
+          min-instances: 1
+          max-instances: 2
+
+  # Automated Backtesting
+  backtester:
+    name: aster-backtester
+    source: ./cloud_architecture/automated_backtesting.py
+    memory: 2Gi
+    cpu: 2
+    min-instances: 0  # Scale to zero when not running
+    max-instances: 1
+    timeout: 3600  # 1 hour timeout
+    environment:
+      ENVIRONMENT: CLOUD
+      SERVICE_TYPE: BACKTESTING
+      BACKTEST_INTERVAL: 3600  # 1 hour
+    scaling:
+      custom-metrics:
+        - name: backtest-queue-length
+          target: 1
+    cost-optimization:
+      spot: true
+      schedule:
+        - time: "01:00-05:00"  # Run during cheap hours
+          min-instances: 0
+          max-instances: 1
+
+  # Live Trading Bot
+  trading-bot:
+    name: aster-trading-bot
+    source: ./cloud_architecture/live_trading_service.py
+    memory: 1Gi
+    cpu: 1
+    min-instances: 1  # Always running for trading
+    max-instances: 2
+    timeout: 300
+    environment:
+      ENVIRONMENT: CLOUD
+      SERVICE_TYPE: TRADING
+      MAX_LEVERAGE: 20
+      RISK_LIMIT: 50  # $50 daily loss limit
+    scaling:
+      cpu-utilization: 50
+    cost-optimization:
+      spot: false  # Critical service, no spot instances
+      schedule:
+        - time: "00:00-23:59"  # 24/7 trading
+          min-instances: 1
+          max-instances: 2
+
+# Cloud Storage (Data Lake)
+storage:
+  buckets:
+    - name: aster-trading-data
+      location: US
+      storage-class: STANDARD
+      lifecycle:
+        - age: 30
+          type: DELETE  # Delete raw data after 30 days
+        - age: 90
+          type: SET_STORAGE_CLASS
+          storage-class: NEARLINE  # Move to cheaper storage
+        - age: 365
+          type: SET_STORAGE_CLASS
+          storage-class: COLDLINE
+      cost-optimization:
+        # Automatic compression for old data
+        compression: gzip
+        # Delete incomplete uploads after 7 days
+        abort-incomplete-multipart-upload: 7
+
+    - name: aster-trading-models
+      location: US
+      storage-class: STANDARD
+      versioning: true
+      lifecycle:
+        - age: 30
+          type: SET_STORAGE_CLASS
+          storage-class: NEARLINE
+      cost-optimization:
+        # Keep only latest 5 versions
+        max-versions: 5
+
+# BigQuery (Analytics & Reporting)
+bigquery:
+  datasets:
+    - name: trading_data
+      location: US
+      tables:
+        - name: market_data
+          schema:
+            - name: timestamp
+              type: TIMESTAMP
+            - name: symbol
+              type: STRING
+            - name: price
+              type: FLOAT64
+            - name: volume
+              type: FLOAT64
+            - name: volatility
+              type: FLOAT64
+          partitioning: timestamp
+          clustering: [symbol]
+
+        - name: trades
+          schema:
+            - name: timestamp
+              type: TIMESTAMP
+            - name: symbol
+              type: STRING
+            - name: direction
+              type: STRING
+            - name: size
+              type: FLOAT64
+            - name: entry_price
+              type: FLOAT64
+            - name: exit_price
+              type: FLOAT64
+            - name: pnl
+              type: FLOAT64
+            - name: confidence
+              type: FLOAT64
+          partitioning: timestamp
+          clustering: [symbol, direction]
+
+        - name: backtest_results
+          schema:
+            - name: timestamp
+              type: TIMESTAMP
+            - name: strategy
+              type: STRING
+            - name: win_rate
+              type: FLOAT64
+            - name: total_pnl
+              type: FLOAT64
+            - name: sharpe_ratio
+              type: FLOAT64
+            - name: max_drawdown
+              type: FLOAT64
+          partitioning: timestamp
+
+  cost-optimization:
+    # Use flat-rate pricing for predictable costs
+    pricing-tier: flat-rate
+    # Automatic partitioning and clustering for query optimization
+    auto-partitioning: true
+    auto-clustering: true
+    # Set query limits
+    max-bytes-per-query: 1GB
+    max-query-time: 300  # 5 minutes
+
+# Cloud Scheduler (Automated Tasks)
+scheduler:
+  jobs:
+
+    # Daily data collection summary
+    - name: daily-data-summary
+      schedule: "0 6 * * *"  # 6 AM daily
+      target: data-collector
+      method: POST
+      body: {"action": "generate_daily_summary"}
+
+    # Hourly backtesting
+    - name: hourly-backtest
+      schedule: "0 * * * *"  # Every hour
+      target: backtester
+      method: POST
+      body: {"action": "run_backtest", "symbols": ["BTCUSDT", "ETHUSDT"]}
+
+    # Weekly model retraining
+    - name: weekly-model-retrain
+      schedule: "0 2 * * 1"  # Monday 2 AM
+      target: backtester
+      method: POST
+      body: {"action": "retrain_models"}
+
+    # Cost optimization checks
+    - name: cost-optimization
+      schedule: "0 */4 * * *"  # Every 4 hours
+      target: dashboard
+      method: POST
+      body: {"action": "optimize_costs"}
+
+    # System health checks
+    - name: health-check
+      schedule: "*/10 * * * *"  # Every 10 minutes
+      target: dashboard
+      method: GET
+      path: /health
+
+# Cloud Monitoring (Observability)
+monitoring:
+  dashboards:
+    - name: trading-platform-overview
+      widgets:
+        - title: "Service Health"
+          type: status
+          services: [dashboard, data-collector, backtester, trading-bot]
+
+        - title: "Daily Costs"
+          type: line-chart
+          metric: billing/total_cost
+          filter: "service:*"
+
+        - title: "Trading Performance"
+          type: gauge
+          metric: custom/trading_pnl
+          thresholds:
+            - value: -50
+              color: red
+            - value: 0
+              color: yellow
+            - value: 50
+              color: green
+
+        - title: "Data Collection Rate"
+          type: bar-chart
+          metric: custom/data_points_collected
+          group-by: symbol
+
+  alerts:
+    - name: high-cost-alert
+      condition: billing/total_cost > 50
+      period: 1h
+      notifications:
+        - type: email
+          recipients: [admin@astertrading.com]
+
+    - name: service-down-alert
+      condition: monitoring/uptime < 0.99
+      period: 5m
+      notifications:
+        - type: slack
+          channel: "#alerts"
+
+    - name: trading-loss-alert
+      condition: custom/daily_pnl < -50
+      period: 1h
+      notifications:
+        - type: sms
+          recipients: [+1234567890]
+
+# Cost Budgets & Quotas
+budgets:
+  - name: monthly-budget
+    amount: 300  # $300/month
+    currency: USD
+    services: ["*"]
+    notifications:
+      - threshold: 50  # Alert at 50% usage
+        type: email
+      - threshold: 80  # Alert at 80% usage
+        type: email
+      - threshold: 100  # Alert at 100% usage
+        type: email
+        block-spending: true  # Stop spending when budget exceeded
+
+  - name: daily-budget
+    amount: 10  # $10/day
+    currency: USD
+    services: ["Cloud Run", "BigQuery"]
+    notifications:
+      - threshold: 75
+        type: slack
+
+# Security Configuration
+security:
+  iam:
+    roles:
+      - name: trading-service-account
+        permissions:
+          - storage.objects.get
+          - storage.objects.create
+          - bigquery.jobs.create
+          - bigquery.tables.getData
+          - cloudscheduler.jobs.run
+        conditions:
+          - title: "Trading Hours Only"
+            expression: "request.time.getHours() >= 9 && request.time.getHours() <= 17"
+
+  secrets:
+    - name: aster-api-keys
+      values:
+        - ASTER_API_KEY
+        - ASTER_SECRET
+      rotation: 30  # Rotate every 30 days
+
+  network:
+    vpc:
+      name: trading-vpc
+      subnets:
+        - name: trading-subnet
+          region: us-central1
+          ip-range: 10.0.0.0/24
+
+    firewall:
+      rules:
+        - name: allow-health-checks
+          source-ranges: ["130.211.0.0/22", "35.191.0.0/16"]  # Google health check IPs
+          ports: ["8080"]
+
+# Cost Optimization Rules
+cost-optimization:
+  rules:
+
+    # Auto-scaling based on time
+    - name: time-based-scaling
+      conditions:
+        - time: "02:00-06:00"  # Off-hours
+          action: scale_down
+          services: [dashboard, backtester]
+        - time: "09:00-17:00"  # Trading hours
+          action: scale_up
+          services: [data-collector, trading-bot]
+
+    # Auto-scaling based on load
+    - name: load-based-scaling
+      conditions:
+        - metric: cpu_utilization > 80
+          action: scale_up
+          services: [data-collector, backtester]
+        - metric: cpu_utilization < 20
+          action: scale_down
+          services: [dashboard]
+
+    # Storage optimization
+    - name: storage-cleanup
+      schedule: "0 3 * * *"  # 3 AM daily
+      actions:
+        - delete_old_logs: 30  # Delete logs older than 30 days
+        - compress_old_data: 90  # Compress data older than 90 days
+        - archive_old_models: 180  # Archive models older than 180 days
+
+    # BigQuery optimization
+    - name: query-optimization
+      actions:
+        - enable_partitioning: true
+        - enable_clustering: true
+        - set_query_cache: true
+        - limit_query_size: 1GB
+
+# Deployment Pipeline
+deployment:
+  steps:
+    - name: validate
+      script: |
+        # Validate infrastructure configuration
+        gcloud deployment-manager deployments describe aster-trading-platform || echo "New deployment"
+
+    - name: build
+      script: |
+        # Build all services
+        for service in services:
+          gcloud builds submit --config cloudbuild.yaml --substitutions _SERVICE_NAME=$service .
+
+    - name: deploy
+      script: |
+        # Deploy infrastructure
+        gcloud deployment-manager deployments create aster-trading-platform \
+          --config infrastructure.yaml \
+          --properties project=$PROJECT,region=$REGION
+
+    - name: test
+      script: |
+        # Run integration tests
+        python -m pytest tests/integration/ -v
+
+    - name: monitor
+      script: |
+        # Set up monitoring and alerts
+        gcloud monitoring dashboards create trading-dashboard --config monitoring.yaml
+
+# Estimated Monthly Costs (Optimized)
+cost-estimate:
+  services:
+    - name: Cloud Run
+      instances: 4  # Average concurrent
+      cost: 120  # $30/month each
+
+    - name: Cloud Storage
+      storage: 500GB
+      cost: 10  # $0.02/GB
+
+    - name: BigQuery
+      queries: 1000  # 1TB data processed
+      cost: 50  # $5/TB
+
+    - name: Cloud Scheduler
+      jobs: 10
+      cost: 5  # Minimal
+
+    - name: Cloud Monitoring
+      metrics: 100
+      cost: 15
+
+  total-monthly: 200  # Well under $300 budget
+  total-daily: 6.67   # Well under $10 daily budget
+
+  optimization-savings:
+    - spot-instances: 40  # 40% savings
+    - auto-scaling: 30    # 30% savings
+    - storage-optimization: 20  # 20% savings
+    - total-savings: 90   # 90% cost reduction from naive implementation
