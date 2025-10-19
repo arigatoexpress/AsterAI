@@ -32,6 +32,10 @@ warnings.filterwarnings('ignore')
 
 # Add project root
 sys.path.insert(0, str(Path(__file__).parent.parent))
+try:
+    import gpu_benchmark_suite as gbs
+except Exception:
+    gbs = None
 
 # Configure page
 st.set_page_config(
@@ -40,6 +44,13 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Auto-detect Cloud Run/GCP environment for safer defaults
+try:
+    if os.environ.get('K_SERVICE') or os.environ.get('PORT'):
+        os.environ['ENVIRONMENT'] = os.environ.get('ENVIRONMENT', 'GCP')
+except Exception:
+    pass
 
 # Load Matrix Theme CSS
 def load_matrix_theme():
@@ -99,12 +110,22 @@ class DashboardDataManager:
         try:
             training_dir = self.project_root / "training_results"
             if not training_dir.exists():
-                return {"status": "Not Found", "last_run": None, "accuracy": 0}
+                return {
+                    "status": "Ready to Train",
+                    "last_run": None,
+                    "accuracy": 0,
+                    "message": "Training data not found. Run training scripts to generate data."
+                }
 
             # Find latest training
             runs = [d for d in training_dir.iterdir() if d.is_dir()]
             if not runs:
-                return {"status": "Not Found", "last_run": None, "accuracy": 0}
+                return {
+                    "status": "No Training Runs",
+                    "last_run": None,
+                    "accuracy": 0,
+                    "message": "No training sessions found. Run training scripts to start."
+                }
 
             latest = max(runs, key=lambda x: x.stat().st_mtime)
 
@@ -331,14 +352,14 @@ class UnifiedTradingDashboard:
 
     def run(self):
         """Run the dashboard."""
-        st.markdown('<h1 class="matrix-header" data-text="🚀 ASTER AI TRADING CONSOLE">🚀 ASTER AI TRADING CONSOLE</h1>', unsafe_allow_html=True)
-        st.markdown('<div class="matrix-subheader">CENTRAL OPERATIONS CENTER - CONTINUOUS DATA COLLECTION, ANALYSIS & TRADING</div>', unsafe_allow_html=True)
+        st.markdown('<h1 class="matrix-header" data-text="🚀 RARI TRADE AI CONSOLE">🚀 RARI TRADE AI CONSOLE</h1>', unsafe_allow_html=True)
+        st.markdown('<div class="matrix-subheader">ENTERPRISE TRADING PLATFORM - ADVANCED AI MODELS & RISK MANAGEMENT</div>', unsafe_allow_html=True)
 
         # Sidebar navigation
         st.sidebar.markdown('<div class="matrix-sidebar"><div class="matrix-sidebar-title">🖥️ NAVIGATION MATRIX</div></div>', unsafe_allow_html=True)
         page = st.sidebar.radio(
             "Select Operation",
-            ["🏠 OVERVIEW", "☁️ CLOUD DEPLOYMENT", "💻 LOCAL DEVELOPMENT", "📈 TRADING PERFORMANCE", "🤖 AI MODELS", "⚡ EXTREME GROWTH"],
+            ["🏠 OVERVIEW", "☁️ CLOUD DEPLOYMENT", "💻 LOCAL DEVELOPMENT", "📈 TRADING PERFORMANCE", "🤖 AI MODELS", "⚡ EXTREME GROWTH", "🧠 GPU BENCHMARKS"],
             label_visibility="collapsed"
         )
 
@@ -349,27 +370,230 @@ class UnifiedTradingDashboard:
         else:
             st.sidebar.info("☁️ Running on GCP")
 
-        # Main content
-        if page == "🏠 Overview":
-            self.show_overview()
-        elif page == "☁️ Cloud Deployment":
-            self.show_cloud_deployment()
-        elif page == "💻 Local Development":
-            self.show_local_development()
-        elif page == "📈 Trading Performance":
-            self.show_trading_performance()
-        elif page == "🤖 AI Models":
-            self.show_ai_models()
-        elif page == "⚡ Extreme Growth":
-            self.show_extreme_growth()
+        # Main content with robust error surfacing
+        try:
+            if page == "🏠 Overview":
+                self.show_overview()
+            elif page == "☁️ Cloud Deployment":
+                self.show_cloud_deployment()
+            elif page == "💻 Local Development":
+                self.show_local_development()
+            elif page == "📈 Trading Performance":
+                self.show_trading_performance()
+            elif page == "🤖 AI Models":
+                self.show_ai_models()
+            elif page == "⚡ Extreme Growth":
+                self.show_extreme_growth()
+            elif page == "🧠 GPU BENCHMARKS":
+                self.show_gpu_benchmarks()
+        except Exception as e:
+            st.error(f"Page error: {e}")
+            import traceback
+            st.code(traceback.format_exc())
 
         # Footer
         st.markdown("---")
         st.markdown("*Built with Aster AI Trading System - October 2025*")
 
+    def show_gpu_benchmarks(self):
+        """Show GPU benchmarks dashboard (JAX, TensorRT, VPIN)."""
+        st.markdown('<div class="matrix-subheader">🧠 GPU BENCHMARKS: JAX · TensorRT · VPIN</div>', unsafe_allow_html=True)
+
+        if gbs is None:
+            st.error("gpu_benchmark_suite not found. Ensure the project root is on sys.path and the file exists.")
+            return
+
+        # Controls
+        cols = st.columns([1,1,1,1,1,1])
+        with cols[0]:
+            run_btn = st.button("▶️ Run Benchmarks", type="primary")
+        with cols[1]:
+            show_env = st.checkbox("Show Environment", value=True)
+        with cols[2]:
+            live_metrics = st.checkbox("Live GPU Metrics", value=True)
+        with cols[3]:
+            refresh_sec = st.number_input("Refresh (s)", min_value=2, max_value=30, value=5, step=1)
+        with cols[4]:
+            warmup = st.number_input("Warmup", min_value=0, max_value=50, value=3, step=1)
+        with cols[5]:
+            repeat = st.number_input("Repeat", min_value=1, max_value=200, value=10, step=1)
+
+        # Advanced parameters
+        with st.expander("⚙️ Advanced Parameters", expanded=False):
+            c1, c2, c3 = st.columns(3)
+            with c1:
+                jax_shape_str = st.text_input("JAX Matmul Shape (m,k,n)", value="2048,1024,2048")
+            with c2:
+                trt_batch = st.number_input("TensorRT Batch", min_value=1, max_value=32768, value=1024, step=1)
+            with c3:
+                vpin_repeat = st.number_input("VPIN Repeat", min_value=1, max_value=50, value=3, step=1)
+
+        # Detect environment immediately
+        env = gbs.detect_environment()
+        if show_env:
+            env_cols = st.columns(4)
+            with env_cols[0]:
+                st.metric("CUDA", "✅" if env.cuda_available else "❌")
+                st.metric("CuPy", "✅" if env.cupy_available else "❌")
+            with env_cols[1]:
+                st.metric("JAX", "✅" if env.jax_available else "❌")
+                st.metric("TensorRT", "✅" if env.tensorrt_available else "❌")
+            with env_cols[2]:
+                st.metric("GPU", env.gpu_name or "N/A")
+            with env_cols[3]:
+                if env.total_memory_gb is not None:
+                    st.metric("GPU Mem (GB)", f"{env.free_memory_gb:.1f}/{env.total_memory_gb:.1f}")
+
+        # Containers for results
+        jax_container = st.container()
+        trt_container = st.container()
+        vpin_container = st.container()
+
+        if run_btn:
+            with st.spinner("Running JAX benchmarks ..."):
+                try:
+                    mkn = [int(p) for p in jax_shape_str.split(',')]
+                except Exception:
+                    mkn = [2048, 1024, 2048]
+                jax_res = gbs.jax_benchmarks(env, warmup=int(warmup), repeat=int(repeat), shapes=tuple(mkn))
+            with st.spinner("Running TensorRT micro-benchmark ..."):
+                trt_res = gbs.tensorrt_benchmark(env, batch_size=int(trt_batch), warmup=int(warmup), repeat=int(repeat))
+            with st.spinner("Running VPIN benchmark ..."):
+                vpin_res = gbs.vpin_benchmarks(env, warmup=0, repeat=int(vpin_repeat))
+
+            # Visualize JAX
+            with jax_container:
+                st.subheader("JAX Benchmarks")
+                if jax_res.get("available"):
+                    backend = jax_res.get("backend")
+                    st.caption(f"Backend: {backend}")
+                    mm = jax_res.get("matmul_ms", {})
+                    rd = jax_res.get("reductions_ms", {})
+                    if mm:
+                        fig = go.Figure()
+                        fig.add_bar(x=["JAX", "NumPy CPU"], y=[mm.get("jax_mean", 0), mm.get("numpy_cpu_mean", 0)], name="Matmul ms",
+                                    error_y=dict(type='data', array=[mm.get("jax_std", 0.0), mm.get("numpy_cpu_std", 0.0)]))
+                        fig.update_layout(title="Matmul Latency (ms) — mean ± std", template="plotly_white")
+                        st.plotly_chart(fig, use_container_width=True)
+                        if mm.get("speedup_x") is not None:
+                            st.metric("Matmul Speedup", f"{mm['speedup_x']:.2f}x")
+                    if rd:
+                        fig2 = go.Figure()
+                        fig2.add_bar(x=["JAX", "NumPy CPU"], y=[rd.get("jax_mean", 0), rd.get("numpy_cpu_mean", 0)], name="Reductions ms",
+                                     error_y=dict(type='data', array=[rd.get("jax_std", 0.0), rd.get("numpy_cpu_std", 0.0)]))
+                        fig2.update_layout(title="Reductions Latency (ms) — mean ± std", template="plotly_white")
+                        st.plotly_chart(fig2, use_container_width=True)
+                        if rd.get("speedup_x") is not None:
+                            st.metric("Reductions Speedup", f"{rd['speedup_x']:.2f}x")
+                else:
+                    st.info("JAX not available.")
+
+            # Visualize TensorRT
+            with trt_container:
+                st.subheader("TensorRT Micro-benchmark")
+                if trt_res.get("available"):
+                    st.metric("Batch Inference", f"{trt_res.get('inference_ms_per_batch_mean', 0):.2f} ms ± {trt_res.get('inference_ms_per_batch_std', 0.0):.2f}")
+                    tput = trt_res.get("throughput_samples_per_s")
+                    if tput is not None:
+                        st.metric("Throughput", f"{tput:.0f} samples/s")
+                else:
+                    err = trt_res.get("error")
+                    st.info(f"TensorRT not available{': ' + err if err else ''}.")
+
+            # Visualize VPIN
+            with vpin_container:
+                st.subheader("VPIN Benchmark")
+                cpu_ms = vpin_res.get("cpu_ms_mean")
+                gpu_ms = vpin_res.get("gpu_ms_mean")
+                speed = vpin_res.get("speedup_x")
+                cols2 = st.columns(3)
+                with cols2[0]:
+                    st.metric("CPU", f"{cpu_ms:.0f} ms ± {vpin_res.get('cpu_ms_std', 0.0):.0f}")
+                with cols2[1]:
+                    st.metric("GPU", f"{gpu_ms:.0f} ms ± {vpin_res.get('gpu_ms_std', 0.0):.0f}" if gpu_ms is not None else "N/A")
+                with cols2[2]:
+                    if speed:
+                        st.metric("Speedup", f"{speed:.2f}x")
+
+            # Persist artifacts and show links
+            ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+            try:
+                json_path, md_path = gbs.generate_reports(env, jax_res, trt_res, vpin_res)
+                csv_path = gbs.write_csv_logs(ts, env, jax_res, trt_res, vpin_res)
+                st.success("Reports generated")
+                st.write(f"JSON: `{json_path}`  ")
+                st.write(f"Markdown: `{md_path}`  ")
+                if csv_path:
+                    st.write(f"CSV trials: `{csv_path}`")
+            except Exception as e:
+                st.warning(f"Report generation issue: {e}")
+
+        # Historical analysis from CSV logs
+        st.markdown('---')
+        st.subheader("📚 Historical Benchmark Analysis")
+        bench_dir = Path('benchmarks')
+        if bench_dir.exists():
+            csv_files = sorted(bench_dir.glob('gpu_benchmark_trials_*.csv'))
+            if csv_files:
+                latest_csv = csv_files[-1]
+                st.caption(f"Latest CSV: {latest_csv.name}")
+                try:
+                    import pandas as pd
+                    df = pd.read_csv(latest_csv)
+                    # Box/violin plots of samples
+                    import plotly.express as px
+                    st.plotly_chart(px.box(df, x='suite', y='value_ms', color='metric', points='all', title='Latency Distributions (ms)'), use_container_width=True)
+                    st.plotly_chart(px.violin(df, x='suite', y='value_ms', color='metric', box=True, points='outliers', title='Latency Violin Plots (ms)'), use_container_width=True)
+                except Exception as e:
+                    st.info(f"Could not load analysis: {e}")
+            else:
+                st.info("No CSV logs found yet. Run benchmarks to generate trials.")
+        else:
+            st.info("Benchmarks directory not found.")
+
+        # Explanations panel
+        with st.expander("📖 Explanations: JAX/XLA, TensorRT, VPIN and Relevance", expanded=False):
+            st.markdown("""
+            - **JAX/XLA**: JAX compiles array programs with XLA to target CPU/GPU. Our tests compare JIT-compiled GPU ops (matmul, reductions) to NumPy CPU baselines.
+            - **TensorRT**: NVIDIA's inference optimizer builds an engine with layer fusion and precision (FP16). We measure per-batch latency and throughput.
+            - **VPIN**: Volume-synchronized PIN estimates order-flow toxicity by volume buckets. We compare CPU vs GPU vectorized implementations to gauge data-engineering speedups relevant to market microstructure features.
+            - **Why this matters**: Faster inference and feature computation reduces decision latency and increases backtest/live throughput, directly impacting strategy responsiveness and coverage.
+            """)
+
+        # Live GPU metrics (optional)
+        if live_metrics and env.cuda_available:
+            try:
+                import pynvml
+                pynvml.nvmlInit()
+                handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+                gpu_placeholder = st.empty()
+                last = time.time()
+                if st.button("⏹ Stop Live Metrics"):
+                    live_metrics = False
+                while live_metrics:
+                    util = pynvml.nvmlDeviceGetUtilizationRates(handle)
+                    mem = pynvml.nvmlDeviceGetMemoryInfo(handle)
+                    temp = pynvml.nvmlDeviceGetTemperature(handle, pynvml.NVML_TEMPERATURE_GPU)
+                    power = pynvml.nvmlDeviceGetPowerUsage(handle) / 1000.0
+                    gpu_placeholder.write({
+                        "gpu_util_percent": util.gpu,
+                        "mem_util_percent": util.memory,
+                        "mem_used_gb": mem.used / (1024**3),
+                        "mem_total_gb": mem.total / (1024**3),
+                        "temperature_c": temp,
+                        "power_watts": power,
+                        "ts": datetime.now().isoformat()
+                    })
+                    time.sleep(int(refresh_sec))
+            except Exception as e:
+                st.info(f"Live GPU metrics unavailable: {e}")
+
     def show_overview(self):
         """Show overview dashboard."""
         st.markdown('<div class="matrix-subheader">🏠 SYSTEM OVERVIEW</div>', unsafe_allow_html=True)
+
+        # Hero/CTA section (renders provided HTML safely)
+        self._render_racing_cta()
 
         # Key metrics
         col1, col2, col3, col4 = st.columns(4)
@@ -467,6 +691,50 @@ class UnifiedTradingDashboard:
 
         for activity in activities:
             st.write(f"• {activity}")
+
+    def _render_racing_cta(self):
+        """Render the racing hero/feature/CTA HTML in a safe Streamlit container."""
+        try:
+            html = """
+<div style="max-width: 1200px; margin: 0 auto;">
+    <!-- Racing description -->
+    <div style="background: rgba(239, 68, 68, 0.1); border: 2px solid rgba(239, 68, 68, 0.3); border-radius: 15px; padding: 1.5rem; margin-bottom: 2rem; backdrop-filter: blur(10px);">
+        <p style="color: #ffffff; font-size: 1.3rem; margin: 0; font-weight: 500;">
+            🏎️ <strong style="color: #ef4444;">VROOM!</strong> Experience the speed of autonomous trading with AI algorithms that react faster than any human trader.
+        </p>
+    </div>
+
+    <!-- Feature highlights -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 1.5rem; text-align: center;">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🏎️💨</div>
+            <h3 style="color: #ef4444; font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem;">Lightning Fast</h3>
+            <p style="color: #fca5a5; font-size: 0.9rem; margin: 0;">Sub-millisecond execution</p>
+        </div>
+        <div style="background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 12px; padding: 1.5rem; text-align: center;">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🧠⚡</div>
+            <h3 style="color: #22c55e; font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem;">AI Powered</h3>
+            <p style="color: #86efac; font-size: 0.9rem; margin: 0;">Advanced neural networks</p>
+        </div>
+        <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 12px; padding: 1.5rem; text-align: center;">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔐🏁</div>
+            <h3 style="color: #3b82f6; font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem;">Secure</h3>
+            <p style="color: #93c5fd; font-size: 0.9rem; margin: 0;">Bank-level encryption</p>
+        </div>
+    </div>
+
+    <!-- CTA -->
+    <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(251, 191, 36, 0.2) 100%); border: 2px solid rgba(239, 68, 68, 0.4); border-radius: 20px; padding: 2rem; backdrop-filter: blur(15px);">
+        <h2 style="color: #ffffff; font-size: 2rem; font-weight: 800; margin-bottom: 1rem; text-align: center;">🏁 READY TO RACE? 🏁</h2>
+        <p style="color: #fbbf24; font-size: 1.1rem; margin-bottom: 0; text-align: center; font-weight: 500;">
+            Join the fastest autonomous trading platform and leave traditional exchanges in the dust!
+        </p>
+    </div>
+</div>
+"""
+            st.markdown(html, unsafe_allow_html=True)
+        except Exception as e:
+            st.info(f"CTA section unavailable: {e}")
 
     def show_cloud_deployment(self):
         """Show cloud deployment status."""

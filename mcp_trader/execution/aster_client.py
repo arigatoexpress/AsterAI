@@ -8,6 +8,7 @@ import asyncio
 import aiohttp
 import websockets
 import json
+import uuid
 import hmac
 import hashlib
 import time
@@ -20,6 +21,7 @@ from functools import wraps
 from datetime import datetime, timedelta
 from enum import Enum
 import pandas as pd
+import uuid as _uuid
 
 logger = logging.getLogger(__name__)
 
@@ -219,6 +221,7 @@ class OrderRequest:
     time_in_force: str = "GTC"  # GTC, IOC, FOK
     reduce_only: bool = False
     post_only: bool = False
+    client_order_id: Optional[str] = None
 
 
 @dataclass
@@ -475,7 +478,7 @@ class AsterRESTClient:
         if self.session:
             await self.session.close()
     
-    def _generate_signature(self, params: Dict, timestamp: str) -> str:
+    def _generate_signature(self, method: str, endpoint: str, params: Dict, timestamp: str) -> str:
         """Generate HMAC signature for Aster DEX authentication."""
         # Create the query string from all parameters including timestamp and recvWindow
         all_params = params.copy()
@@ -485,10 +488,13 @@ class AsterRESTClient:
         # Sort parameters by key and create query string
         query_string = "&".join([f"{k}={v}" for k, v in sorted(all_params.items())])
 
+        # For Aster DEX, signature is generated from method + endpoint + query_string
+        message = f"{method}{endpoint}{query_string}"
+
         # Generate signature using HMAC SHA256
         signature = hmac.new(
             self.config.secret_key.encode('utf-8'),
-            query_string.encode('utf-8'),
+            message.encode('utf-8'),
             hashlib.sha256
         ).hexdigest()
 
@@ -523,7 +529,7 @@ class AsterRESTClient:
         """Get synchronized timestamp for API requests."""
         return str(int(time.time() * 1000) + self.time_offset)
 
-    def _add_signature(self, params: Dict = None) -> Dict:
+    def _add_signature(self, method: str, endpoint: str, params: Dict = None) -> Dict:
         """Add timestamp, recvWindow, and signature to parameters for signed requests."""
         signed_params = params.copy() if params else {}
 
@@ -531,7 +537,7 @@ class AsterRESTClient:
         timestamp = self._get_synced_timestamp()
 
         # Generate and add signature
-        signature = self._generate_signature(signed_params, timestamp)
+        signature = self._generate_signature(method, endpoint, signed_params, timestamp)
         signed_params['timestamp'] = timestamp
         signed_params['recvWindow'] = str(self.config.recv_window)
         signed_params['signature'] = signature
@@ -544,10 +550,12 @@ class AsterRESTClient:
         # Prepare parameters
         request_params = params.copy() if params else {}
         headers = self._get_headers(request_params, signed)
+        # Add correlation header for tracing
+        headers['X-Request-ID'] = _uuid.uuid4().hex
 
         # Add signature for signed endpoints
         if signed:
-            request_params = self._add_signature(request_params)
+            request_params = self._add_signature(method, endpoint, request_params)
 
         url = f"{self.config.base_url}{endpoint}"
 
@@ -555,20 +563,43 @@ class AsterRESTClient:
             try:
                 if method == 'GET':
                     async with self.session.get(url, headers=headers, params=request_params) as response:
-                        result = await response.json()
+                        try:
+                            result = await response.json()
+                        except Exception as json_error:
+                            logger.error(f"Failed to parse JSON response: {json_error}")
+                            result = None
                 elif method == 'POST':
                     async with self.session.post(url, headers=headers, params=request_params, json=data) as response:
-                        result = await response.json()
+                        try:
+                            result = await response.json()
+                        except Exception as json_error:
+                            logger.error(f"Failed to parse JSON response: {json_error}")
+                            result = None
                 elif method == 'DELETE':
                     async with self.session.delete(url, headers=headers, params=request_params) as response:
-                        result = await response.json()
+                        try:
+                            result = await response.json()
+                        except Exception as json_error:
+                            logger.error(f"Failed to parse JSON response: {json_error}")
+                            result = None
                 
                 if response.status == 200:
+                    if result is None:
+                        logger.warning(f"Received null response for {endpoint}")
+                        return {}
                     return result
                 else:
                     # Handle specific API error codes
-                    error_msg = result.get('msg', 'Unknown error') if isinstance(result, dict) else str(result)
-                    error_code = result.get('code', response.status) if isinstance(result, dict) else response.status
+                    error_msg = 'Unknown error'
+                    error_code = response.status
+                    if result is not None:
+                        if isinstance(result, dict):
+                            error_msg = result.get('msg', 'Unknown error')
+                            error_code = result.get('code', response.status)
+                        else:
+                            error_msg = str(result)
+                    else:
+                        error_msg = 'No response data'
 
                     logger.error(f"API request failed: HTTP {response.status}, Code {error_code} - {error_msg}")
 
@@ -585,7 +616,7 @@ class AsterRESTClient:
                     raise
                 await asyncio.sleep(2 ** attempt)  # Exponential backoff
         
-        raise Exception("All request attempts failed"        )
+        raise Exception("All request attempts failed")
 
     @handle_api_error
     async def ping(self) -> Dict:
@@ -621,6 +652,9 @@ class AsterRESTClient:
                     cleaned_result[key] = value
 
             return cleaned_result
+        elif result is None:
+            logger.warning(f"Received null response for ticker {symbol}, returning empty dict")
+            return {}
 
         return result
 
@@ -633,16 +667,51 @@ class AsterRESTClient:
     @handle_api_error
     async def get_account_info(self) -> AccountInfo:
         """Get account information."""
-        result = await self._make_request('GET', '/account')
+        # Try v4 account endpoint first (most comprehensive)
+        try:
+            result = await self.get_account_info_v4()
+            if result and isinstance(result, dict):
+                # Parse v4 response format
+                return AccountInfo(
+                    total_balance=float(result.get('totalWalletBalance', 0.0)),
+                    available_balance=float(result.get('availableBalance', 0.0)),
+                    used_margin=float(result.get('totalInitialMargin', 0.0)),
+                    free_margin=float(result.get('totalCrossWalletBalance', 0.0)),
+                    equity=float(result.get('totalWalletBalance', 0.0)),
+                    positions=[self._parse_position(pos) for pos in result.get('positions', [])],
+                    open_orders=[]  # v4 doesn't include orders
+                )
+        except Exception as e:
+            logger.warning(f"Failed to get account info from v4 endpoint: {e}")
         
+        # Fallback to v2 balance endpoint
+        try:
+            balances = await self.get_account_balance_v2()
+            if balances:
+                total_balance = sum(float(b.balance) for b in balances)
+                available_balance = sum(float(b.available_balance) for b in balances)
+                return AccountInfo(
+                    total_balance=total_balance,
+                    available_balance=available_balance,
+                    used_margin=0.0,
+                    free_margin=available_balance,
+                    equity=total_balance,
+                    positions=[],
+                    open_orders=[]
+                )
+        except Exception as e:
+            logger.warning(f"Failed to get balance from v2 endpoint: {e}")
+        
+        # Return default values if all endpoints fail
+        logger.warning("All account info endpoints failed, using default values")
         return AccountInfo(
-            total_balance=result.get('total_balance', 0.0),
-            available_balance=result.get('available_balance', 0.0),
-            used_margin=result.get('used_margin', 0.0),
-            free_margin=result.get('free_margin', 0.0),
-            equity=result.get('equity', 0.0),
-            positions=[self._parse_position(pos) for pos in result.get('positions', [])],
-            open_orders=[self._parse_order(order) for order in result.get('open_orders', [])]
+            total_balance=0.0,
+            available_balance=0.0,
+            used_margin=0.0,
+            free_margin=0.0,
+            equity=0.0,
+            positions=[],
+            open_orders=[]
         )
     
     async def get_positions(self) -> List[Position]:
@@ -971,12 +1040,12 @@ class AsterRESTClient:
                 # Single symbol response
                 return TickerPrice(
                     symbol=data["symbol"],
-                    price_change=float(data["priceChange"]),
-                    price_change_percent=float(data["priceChangePercent"]),
-                    weighted_avg_price=float(data["weightedAvgPrice"]),
-                    prev_close_price=float(data["prevClosePrice"]),
+                    price_change=float(data.get("priceChange", 0)),
+                    price_change_percent=float(data.get("priceChangePercent", 0)),
+                    weighted_avg_price=float(data.get("weightedAvgPrice", 0)),
+                    prev_close_price=float(data.get("prevClosePrice", data.get("lastPrice", 0))),
                     last_price=float(data["lastPrice"]),
-                    last_qty=float(data["lastQty"]),
+                    last_qty=float(data.get("lastQty", 0)),
                     bid_price=float(data.get("bidPrice", 0)),
                     bid_qty=float(data.get("bidQty", 0)),
                     ask_price=float(data.get("askPrice", 0)),
@@ -997,12 +1066,12 @@ class AsterRESTClient:
                 return [
                     TickerPrice(
                         symbol=item["symbol"],
-                        price_change=float(item["priceChange"]),
-                        price_change_percent=float(item["priceChangePercent"]),
-                        weighted_avg_price=float(item["weightedAvgPrice"]),
-                        prev_close_price=float(item["prevClosePrice"]),
+                        price_change=float(item.get("priceChange", 0)),
+                        price_change_percent=float(item.get("priceChangePercent", 0)),
+                        weighted_avg_price=float(item.get("weightedAvgPrice", 0)),
+                        prev_close_price=float(item.get("prevClosePrice", item.get("lastPrice", 0))),
                         last_price=float(item["lastPrice"]),
-                        last_qty=float(item["lastQty"]),
+                        last_qty=float(item.get("lastQty", 0)),
                         bid_price=float(item.get("bidPrice", 0)),
                         bid_qty=float(item.get("bidQty", 0)),
                         ask_price=float(item.get("askPrice", 0)),
@@ -1869,6 +1938,11 @@ class AsterClient:
         self.config = AsterConfig(api_key=api_key, secret_key=secret_key)
         self.rest_client = AsterRESTClient(self.config)
         self.ws_client = AsterWebSocketClient(self.config)
+        # Simple circuit breaker for order placement
+        self._order_cb_failures = 0
+        self._order_cb_threshold = 5
+        self._order_cb_cooldown_seconds = 30
+        self._order_cb_open_until: Optional[float] = None
     
     async def __aenter__(self):
         await self.rest_client.__aenter__()
@@ -1916,6 +1990,10 @@ class AsterClient:
     async def get_order_book(self, symbol: str, limit: int = 100) -> Dict:
         """Get order book depth."""
         return await self.rest_client.get_order_book(symbol, limit)
+    
+    async def get_recent_trades(self, symbol: str, limit: int = 500) -> List[Dict]:
+        """Get recent trades for a symbol."""
+        return await self.rest_client.get_recent_trades(symbol, limit)
 
     async def get_server_time(self) -> int:
         """Get server time for timestamp synchronization."""
@@ -1927,8 +2005,56 @@ class AsterClient:
     async def get_orders(self, symbol: str = None, status: str = None) -> List[OrderResponse]:
         return await self.rest_client.get_orders(symbol, status)
     
-    async def place_order(self, order_request: OrderRequest) -> OrderResponse:
-        return await self.rest_client.place_order(order_request)
+    async def place_order(self, *args, **kwargs) -> OrderResponse:
+        """Place an order. Accepts OrderRequest or explicit kwargs forwarded to REST client.
+
+        Examples:
+            await client.place_order(OrderRequest(...))
+            await client.place_order(symbol=..., side=OrderSide.BUY, order_type=OrderType.MARKET, quantity=..., new_client_order_id="...")
+        """
+        # Circuit breaker: deny if open
+        now = time.time()
+        if self._order_cb_open_until and now < self._order_cb_open_until:
+            raise Exception("Order placement temporarily disabled (circuit breaker open)")
+
+        # Normalize to OrderRequest path if provided
+        if args and isinstance(args[0], OrderRequest):
+            order_request = args[0]
+            if not order_request.client_order_id:
+                suffix = uuid.uuid4().hex[:8]
+                order_request.client_order_id = f"aster-{order_request.symbol}-{int(now * 1000)}-{suffix}"
+            try:
+                response = await self.rest_client.place_order(order_request)
+                self._order_cb_failures = 0
+                self._order_cb_open_until = None
+                return response
+            except Exception:
+                self._order_cb_failures += 1
+                if self._order_cb_failures >= self._order_cb_threshold:
+                    self._order_cb_open_until = time.time() + self._order_cb_cooldown_seconds
+                    logger.warning(
+                        f"Order circuit breaker opened for {self._order_cb_cooldown_seconds}s after "
+                        f"{self._order_cb_failures} consecutive failures"
+                    )
+                    self._order_cb_failures = 0
+                raise
+
+        # Explicit parameter path (e.g., new_client_order_id, etc.)
+        try:
+            response = await self.rest_client.place_order(**kwargs)
+            self._order_cb_failures = 0
+            self._order_cb_open_until = None
+            return response
+        except Exception:
+            self._order_cb_failures += 1
+            if self._order_cb_failures >= self._order_cb_threshold:
+                self._order_cb_open_until = time.time() + self._order_cb_cooldown_seconds
+                logger.warning(
+                    f"Order circuit breaker opened for {self._order_cb_cooldown_seconds}s after "
+                    f"{self._order_cb_failures} consecutive failures"
+                )
+                self._order_cb_failures = 0
+            raise
     
     async def cancel_order(self, order_id: str) -> bool:
         return await self.rest_client.cancel_order(order_id)

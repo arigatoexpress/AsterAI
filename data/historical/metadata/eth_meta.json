@@ -1,0 +1,13 @@
+{
+  "asset": "ETH",
+  "asset_class": "crypto",
+  "source": "multi_source",
+  "start_date": "2024-10-16T00:00:00",
+  "end_date": "2025-10-15T01:08:33",
+  "record_count": 366,
+  "data_hash": "a07da22837400aa3f5452230ce2be567",
+  "created_at": "2025-10-15T01:08:39.419845",
+  "updated_at": "2025-10-15T01:08:39.419847",
+  "version": 1,
+  "file_path": "crypto\\eth.parquet"
+}

@@ -1,0 +1,9 @@
+{
+  "symbol": "PAYEMS",
+  "name": "Nonfarm Payrolls",
+  "asset_type": "economic",
+  "source": "fred",
+  "records": 671,
+  "date_range": "2023-10-01 00:00:00 to 2025-08-01 00:00:00",
+  "collection_time": "2025-10-15T01:59:53.759742"
+}

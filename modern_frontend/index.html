@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aster AI Trading Platform</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --dark: #0f172a;
+            --dark-light: #1e293b;
+            --gray: #64748b;
+            --gray-light: #94a3b8;
+            --white: #ffffff;
+            --border: #334155;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: var(--white);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .nav {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav a {
+            color: var(--gray-light);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .nav a:hover, .nav a.active {
+            color: var(--white);
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--success);
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        /* Main Content */
+        .main {
+            padding: 2rem 0;
+        }
+
+        .hero {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--gray-light);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .card {
+            background: var(--dark-light);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .card-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .card-icon.primary { background: rgba(99, 102, 241, 0.2); color: var(--primary); }
+        .card-icon.success { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+        .card-icon.warning { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+        .card-icon.error { background: rgba(239, 68, 68, 0.2); color: var(--error); }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.healthy { background: var(--success); }
+        .status-dot.warning { background: var(--warning); }
+        .status-dot.error { background: var(--error); }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Metrics */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric {
+            background: var(--dark-light);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            color: var(--gray-light);
+            font-size: 0.875rem;
+        }
+
+        .metric-change {
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-top: 0.25rem;
+        }
+
+        .metric-change.positive { color: var(--success); }
+        .metric-change.negative { color: var(--error); }
+
+        /* Chart Container */
+        .chart-container {
+            background: var(--dark-light);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .chart-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .chart-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            background: transparent;
+            color: var(--gray-light);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover, .btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: var(--white);
+        }
+
+        /* Activity Feed */
+        .activity-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-icon {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+        }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-text {
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .activity-time {
+            font-size: 0.75rem;
+            color: var(--gray);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav {
+                display: none;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-robot"></i>
+                    Aster AI
+                </div>
+                <nav class="nav">
+                    <a href="#dashboard" class="active">Dashboard</a>
+                    <a href="#trading">Trading</a>
+                    <a href="#analytics">Analytics</a>
+                    <a href="#settings">Settings</a>
+                </nav>
+                <div class="status-badge">
+                    <div class="status-dot healthy"></div>
+                    System Online
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="container">
+            <div class="hero">
+                <h1>AI Trading Platform</h1>
+                <p>Advanced algorithmic trading powered by artificial intelligence and real-time market analysis</p>
+            </div>
+
+            <!-- Metrics -->
+            <div class="metrics-grid">
+                <div class="metric">
+                    <div class="metric-value" id="total-balance">$100.00</div>
+                    <div class="metric-label">Total Balance</div>
+                    <div class="metric-change positive" id="balance-change">+$0.00 (0.00%)</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="total-pnl">+$0.00</div>
+                    <div class="metric-label">Total P&L</div>
+                    <div class="metric-change positive" id="pnl-change">+0.00%</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="active-trades">0</div>
+                    <div class="metric-label">Active Trades</div>
+                    <div class="metric-change" id="trades-change">0 today</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="win-rate">0%</div>
+                    <div class="metric-label">Win Rate</div>
+                    <div class="metric-change" id="rate-change">Last 24h</div>
+                </div>
+            </div>
+
+            <!-- Dashboard Grid -->
+            <div class="dashboard-grid">
+                <!-- Trading Bot Status -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="card-icon primary">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            Trading Bot
+                        </div>
+                        <div class="status-indicator">
+                            <div class="status-dot healthy"></div>
+                            <span id="bot-status">Running</span>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon primary">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-text">Bot is actively monitoring markets</div>
+                            <div class="activity-time" id="bot-last-update">Just now</div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon success">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-text">All systems operational</div>
+                            <div class="activity-time">2 minutes ago</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Market Data -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="card-icon success">
+                                <i class="fas fa-chart-bar"></i>
+                            </div>
+                            Market Data
+                        </div>
+                        <div class="status-indicator">
+                            <div class="status-dot healthy"></div>
+                            <span>Live</span>
+                        </div>
+                    </div>
+                    <div id="market-data">
+                        <div class="activity-item">
+                            <div class="activity-content">
+                                <div class="activity-text">BTC/USDT: $50,000.00</div>
+                                <div class="activity-time">+2.5% (24h)</div>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-content">
+                                <div class="activity-text">ETH/USDT: $3,000.00</div>
+                                <div class="activity-time">+1.8% (24h)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Risk Management -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="card-icon warning">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            Risk Management
+                        </div>
+                        <div class="status-indicator">
+                            <div class="status-dot healthy"></div>
+                            <span>Active</span>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon success">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-text">Stop-loss: 2% | Take-profit: 4%</div>
+                            <div class="activity-time">Risk limits active</div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon primary">
+                            <i class="fas fa-eye"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-text">Monitoring 3 trading pairs</div>
+                            <div class="activity-time">Real-time analysis</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Performance Chart -->
+                <div class="card" style="grid-column: span 2;">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="card-icon primary">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            Performance Chart
+                        </div>
+                        <div class="chart-controls">
+                            <button class="btn active">1H</button>
+                            <button class="btn">4H</button>
+                            <button class="btn">1D</button>
+                            <button class="btn">1W</button>
+                        </div>
+                    </div>
+                    <div id="performance-chart" style="height: 300px; background: var(--dark); border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; color: var(--gray-light);">
+                        <div style="text-align: center;">
+                            <i class="fas fa-chart-line" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                            <div>Performance chart will load here</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon primary">
+                            <i class="fas fa-history"></i>
+                        </div>
+                        Recent Activity
+                    </div>
+                </div>
+                <div id="recent-activity">
+                    <div class="activity-item">
+                        <div class="activity-icon success">
+                            <i class="fas fa-play"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-text">Trading bot started successfully</div>
+                            <div class="activity-time">2 minutes ago</div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon primary">
+                            <i class="fas fa-download"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-text">Market data updated</div>
+                            <div class="activity-time">5 minutes ago</div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-text">API connection using demo mode</div>
+                            <div class="activity-time">10 minutes ago</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Configuration
+        const BOT_URL = 'https://aster-trading-agent-880429861698.us-central1.run.app';
+        const GRAPHQL_URL = 'https://aster-graphql-gateway-880429861698.us-central1.run.app';
+
+        // State
+        let isConnected = false;
+        let lastUpdate = new Date();
+
+        // Utility functions
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD'
+            }).format(value);
+        }
+
+        function formatPercent(value) {
+            return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
+        }
+
+        function formatTime(date) {
+            const now = new Date();
+            const diff = now - date;
+            const minutes = Math.floor(diff / 60000);
+            
+            if (minutes < 1) return 'Just now';
+            if (minutes < 60) return `${minutes}m ago`;
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `${hours}h ago`;
+            return date.toLocaleDateString();
+        }
+
+        // API functions
+        async function fetchBotStatus() {
+            try {
+                const response = await fetch(`${BOT_URL}/status`);
+                if (response.ok) {
+                    return await response.json();
+                }
+                throw new Error(`HTTP ${response.status}`);
+            } catch (error) {
+                console.error('Bot status error:', error);
+                return { status: 'error', message: error.message };
+            }
+        }
+
+        async function fetchBotHealth() {
+            try {
+                const response = await fetch(`${BOT_URL}/health`);
+                if (response.ok) {
+                    return await response.json();
+                }
+                throw new Error(`HTTP ${response.status}`);
+            } catch (error) {
+                console.error('Bot health error:', error);
+                return { status: 'error', message: error.message };
+            }
+        }
+
+        async function fetchMarketData() {
+            try {
+                const response = await fetch(`${GRAPHQL_URL}/graphql`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query: '{ markets { symbol price } }'
+                    })
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    return data.data?.markets || [];
+                }
+                throw new Error(`HTTP ${response.status}`);
+            } catch (error) {
+                console.error('Market data error:', error);
+                return [];
+            }
+        }
+
+        // Update functions
+        function updateBotStatus(status) {
+            const statusElement = document.getElementById('bot-status');
+            const statusDot = document.querySelector('.status-dot');
+            
+            if (status.status === 'running') {
+                statusElement.textContent = 'Running';
+                statusDot.className = 'status-dot healthy';
+            } else if (status.status === 'stopped') {
+                statusElement.textContent = 'Stopped';
+                statusDot.className = 'status-dot warning';
+            } else {
+                statusElement.textContent = 'Error';
+                statusDot.className = 'status-dot error';
+            }
+        }
+
+        function updateMarketData(markets) {
+            const container = document.getElementById('market-data');
+            container.innerHTML = '';
+            
+            markets.forEach(market => {
+                const item = document.createElement('div');
+                item.className = 'activity-item';
+                item.innerHTML = `
+                    <div class="activity-content">
+                        <div class="activity-text">${market.symbol}: ${formatCurrency(market.price)}</div>
+                        <div class="activity-time">Live data</div>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function updateMetrics() {
+            // Mock data for now - in real implementation, this would come from the bot
+            const balance = 100.00;
+            const pnl = 0.00;
+            const trades = 0;
+            const winRate = 0;
+
+            document.getElementById('total-balance').textContent = formatCurrency(balance);
+            document.getElementById('total-pnl').textContent = formatCurrency(pnl);
+            document.getElementById('active-trades').textContent = trades.toString();
+            document.getElementById('win-rate').textContent = `${winRate}%`;
+        }
+
+        function updateLastUpdate() {
+            document.getElementById('bot-last-update').textContent = formatTime(lastUpdate);
+        }
+
+        // Main update function
+        async function updateDashboard() {
+            try {
+                const [botStatus, botHealth, marketData] = await Promise.all([
+                    fetchBotStatus(),
+                    fetchBotHealth(),
+                    fetchMarketData()
+                ]);
+
+                updateBotStatus(botStatus);
+                updateMarketData(marketData);
+                updateMetrics();
+                updateLastUpdate();
+
+                isConnected = true;
+                lastUpdate = new Date();
+            } catch (error) {
+                console.error('Dashboard update error:', error);
+                isConnected = false;
+            }
+        }
+
+        // Initialize
+        updateDashboard();
+        
+        // Auto-refresh every 5 seconds
+        setInterval(updateDashboard, 5000);
+
+        // Chart controls
+        document.querySelectorAll('.chart-controls .btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.chart-controls .btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                // In real implementation, update chart data here
+            });
+        });
+    </script>
+</body>
+</html>

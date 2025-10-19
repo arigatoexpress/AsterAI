@@ -1,0 +1,6 @@
+:root{--bg:#0b0c10;--fg:#c5c6c7;--accent1:#8A2BE2;--accent2:#00FFFF;--accent3:#FF69B4}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif}
+a{color:inherit;text-decoration:none}
+
+

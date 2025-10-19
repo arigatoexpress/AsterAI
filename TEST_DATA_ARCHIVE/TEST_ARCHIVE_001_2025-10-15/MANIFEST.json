@@ -1,0 +1,72 @@
+{
+  "archive_info": {
+    "name": "TEST_ARCHIVE_001_2025-10-15",
+    "number": 1,
+    "date": "2025-10-15",
+    "created": "2025-10-16T22:35:00.772953",
+    "total_files": 5,
+    "total_size_mb": 0.01
+  },
+  "categories": {
+    "backtesting": {
+      "file_count": 1,
+      "total_size_mb": 0.0,
+      "files": [
+        "backtest_20251015_183646.json"
+      ]
+    },
+    "training": {
+      "file_count": 3,
+      "total_size_mb": 0.0,
+      "files": [
+        "validation_report_20251015_184016.json",
+        "validation_report_20251015_184037.json",
+        "training_report_20251015_184055.md"
+      ]
+    },
+    "trading": {
+      "file_count": 1,
+      "total_size_mb": 0.0,
+      "files": [
+        "paper_trading_20251015_023739.json"
+      ]
+    }
+  },
+  "files": [
+    {
+      "filename": "backtest_20251015_183646.json",
+      "category": "backtesting",
+      "size_mb": 0.0,
+      "description": "Backtesting results and performance metrics",
+      "archive_path": "D:\\CodingFiles\\AsterAI\\TEST_DATA_ARCHIVE\\TEST_ARCHIVE_001_2025-10-15\\backtesting\\backtest_20251015_183646_5605db87.json"
+    },
+    {
+      "filename": "validation_report_20251015_184016.json",
+      "category": "training",
+      "size_mb": 0.0,
+      "description": "Data validation and quality assessment results",
+      "archive_path": "D:\\CodingFiles\\AsterAI\\TEST_DATA_ARCHIVE\\TEST_ARCHIVE_001_2025-10-15\\training\\validation_report_20251015_184016_ec81a1ad.json"
+    },
+    {
+      "filename": "validation_report_20251015_184037.json",
+      "category": "training",
+      "size_mb": 0.0,
+      "description": "Data validation and quality assessment results",
+      "archive_path": "D:\\CodingFiles\\AsterAI\\TEST_DATA_ARCHIVE\\TEST_ARCHIVE_001_2025-10-15\\training\\validation_report_20251015_184037_fd6eadef.json"
+    },
+    {
+      "filename": "training_report_20251015_184055.md",
+      "category": "training",
+      "size_mb": 0.0,
+      "description": "Model training results and validation data",
+      "archive_path": "D:\\CodingFiles\\AsterAI\\TEST_DATA_ARCHIVE\\TEST_ARCHIVE_001_2025-10-15\\training\\training_report_20251015_184055_98769e7e.md"
+    },
+    {
+      "filename": "paper_trading_20251015_023739.json",
+      "category": "trading",
+      "size_mb": 0.0,
+      "description": "Trading system results and performance data",
+      "archive_path": "D:\\CodingFiles\\AsterAI\\TEST_DATA_ARCHIVE\\TEST_ARCHIVE_001_2025-10-15\\trading\\paper_trading_20251015_023739_3611ad75.json"
+    }
+  ]
+}

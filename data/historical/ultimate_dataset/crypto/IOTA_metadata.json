@@ -1,0 +1,14 @@
+{
+  "symbol": "IOTA",
+  "sources_used": [
+    "binance"
+  ],
+  "data_points": 1000,
+  "collection_time": "2025-10-15T16:32:39.328964",
+  "source_details": {
+    "binance": {
+      "records": 1000,
+      "date_range": "2023-10-16 23:00:00 to 2023-11-27 14:00:00"
+    }
+  }
+}

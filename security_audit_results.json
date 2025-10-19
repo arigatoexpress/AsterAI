@@ -1,0 +1,175 @@
+{
+  "findings": {
+    "critical": [],
+    "high": [
+      {
+        "title": "Potential hardcoded secret found in security_audit.py:130",
+        "details": "security_audit.py:130 - r'PRIVATE_KEY',",
+        "severity": "high"
+      },
+      {
+        "title": "Potential hardcoded secret found in security_audit.py:131",
+        "details": "security_audit.py:131 - r'AWS_ACCESS_KEY',",
+        "severity": "high"
+      },
+      {
+        "title": "Potential hardcoded secret found in security_audit.py:132",
+        "details": "security_audit.py:132 - r'DATABASE_URL'",
+        "severity": "high"
+      },
+      {
+        "title": "Potential hardcoded secret found in validate_codebase.py:127",
+        "details": "scripts\\validate_codebase.py:127 - if any(pattern in content for pattern in ['localhost', '127.0.0.1', 'password=', 'api_key=']):",
+        "severity": "high"
+      },
+      {
+        "title": "Potential sql injection vulnerability in security_audit.py",
+        "details": "security_audit.py - Pattern: \\+.*sql",
+        "severity": "high"
+      },
+      {
+        "title": "Potential sql injection vulnerability in security_audit.py",
+        "details": "security_audit.py - Pattern: %s.*sql",
+        "severity": "high"
+      }
+    ],
+    "medium": [
+      {
+        "title": "Could not read sensitive file .secrets.json: 'SecurityAuditor' object has no attribute 'contains_sensitive_data'",
+        "details": ".secrets.json",
+        "severity": "medium"
+      },
+      {
+        "title": "Could not read sensitive file .api_keys.json: 'SecurityAuditor' object has no attribute 'contains_sensitive_data'",
+        "details": ".api_keys.json",
+        "severity": "medium"
+      },
+      {
+        "title": "Package requests should be audited for known vulnerabilities",
+        "details": "Check for requests versions < 2.25.0",
+        "severity": "medium"
+      },
+      {
+        "title": "Package cryptography should be audited for known vulnerabilities",
+        "details": "Keep cryptography up to date",
+        "severity": "medium"
+      },
+      {
+        "title": "Potential xss vulnerability in hft_backtester.py",
+        "details": "backtesting\\hft_backtester.py - Pattern: eval\\s*\\(",
+        "severity": "medium"
+      },
+      {
+        "title": "Potential weak crypto vulnerability in aster_trader.py",
+        "details": "dashboard\\aster_trader.py - Pattern: des\\s*\\(",
+        "severity": "medium"
+      },
+      {
+        "title": "Potential weak crypto vulnerability in aster_dex_data_collector.py",
+        "details": "local_training\\aster_dex_data_collector.py - Pattern: des\\s*\\(",
+        "severity": "medium"
+      },
+      {
+        "title": "Dangerous import 'pickle' found in model_deployment_pipeline.py",
+        "details": "local_training\\model_deployment_pipeline.py",
+        "severity": "medium"
+      },
+      {
+        "title": "Potential xss vulnerability in train_lstm_gpu.py",
+        "details": "scripts\\train_lstm_gpu.py - Pattern: eval\\s*\\(",
+        "severity": "medium"
+      },
+      {
+        "title": "Potential xss vulnerability in hft_learning.py",
+        "details": "mcp_trader\\ai\\hft_learning.py - Pattern: eval\\s*\\(",
+        "severity": "medium"
+      },
+      {
+        "title": "Potential weak crypto vulnerability in hft_trading_agent.py",
+        "details": "mcp_trader\\ai\\hft_trading_agent.py - Pattern: des\\s*\\(",
+        "severity": "medium"
+      },
+      {
+        "title": "Dangerous import 'pickle' found in online_learning.py",
+        "details": "mcp_trader\\ai\\online_learning.py",
+        "severity": "medium"
+      },
+      {
+        "title": "Potential weak crypto vulnerability in enhanced_backtester.py",
+        "details": "mcp_trader\\backtesting\\enhanced_backtester.py - Pattern: des\\s*\\(",
+        "severity": "medium"
+      },
+      {
+        "title": "Potential weak crypto vulnerability in aster_feed.py",
+        "details": "mcp_trader\\data\\aster_feed.py - Pattern: des\\s*\\(",
+        "severity": "medium"
+      },
+      {
+        "title": "Potential weak crypto vulnerability in aster_client.py",
+        "details": "mcp_trader\\execution\\aster_client.py - Pattern: des\\s*\\(",
+        "severity": "medium"
+      },
+      {
+        "title": "Potential xss vulnerability in cnn_predictor.py",
+        "details": "mcp_trader\\models\\cnn_predictor.py - Pattern: eval\\s*\\(",
+        "severity": "medium"
+      },
+      {
+        "title": "Potential xss vulnerability in tensorrt_optimizer.py",
+        "details": "mcp_trader\\models\\tensorrt_optimizer.py - Pattern: eval\\s*\\(",
+        "severity": "medium"
+      },
+      {
+        "title": "Potential weak crypto vulnerability in monte_carlo_sim.py",
+        "details": "mcp_trader\\risk\\monte_carlo_sim.py - Pattern: des\\s*\\(",
+        "severity": "medium"
+      },
+      {
+        "title": "Potential weak crypto vulnerability in autonomous_trader.py",
+        "details": "mcp_trader\\trading\\autonomous_trader.py - Pattern: des\\s*\\(",
+        "severity": "medium"
+      },
+      {
+        "title": "Potential xss vulnerability in gpu_utils.py",
+        "details": "mcp_trader\\utils\\gpu_utils.py - Pattern: eval\\s*\\(",
+        "severity": "medium"
+      },
+      {
+        "title": "Potential xss vulnerability in gpu_lstm.py",
+        "details": "mcp_trader\\models\\deep_learning\\gpu_lstm.py - Pattern: eval\\s*\\(",
+        "severity": "medium"
+      },
+      {
+        "title": "Potential xss vulnerability in lstm_predictor.py",
+        "details": "mcp_trader\\models\\deep_learning\\lstm_predictor.py - Pattern: eval\\s*\\(",
+        "severity": "medium"
+      }
+    ],
+    "low": [
+      {
+        "title": "Could not audit config file dashboard/aster_trader_dashboard.py: 'charmap' codec can't decode byte 0x9d in position 2427: character maps to <undefined>",
+        "details": "dashboard\\aster_trader_dashboard.py",
+        "severity": "low"
+      }
+    ],
+    "info": []
+  },
+  "stats": {
+    "files_scanned": 0,
+    "lines_scanned": 0,
+    "vulnerabilities_found": 29,
+    "security_score": 25
+  },
+  "recommendations": [
+    "HIGH PRIORITY: Fix high-severity security issues",
+    "Remove all hardcoded secrets and use environment variables",
+    "Implement comprehensive input validation on all user inputs",
+    "Use parameterized queries for database operations",
+    "Implement proper session management and CSRF protection",
+    "Regular security code reviews and dependency updates",
+    "Implement rate limiting and DDoS protection",
+    "Use secure headers (CSP, HSTS, X-Frame-Options)",
+    "Implement proper logging and monitoring for security events",
+    "Regular backup and disaster recovery testing"
+  ]
+}

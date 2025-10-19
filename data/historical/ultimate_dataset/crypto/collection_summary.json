@@ -1,0 +1,603 @@
+{
+  "collection_time": "2025-10-15T01:30:23.544818",
+  "total_assets": 100,
+  "successful": 100,
+  "failed": 0,
+  "failed_assets": [],
+  "asset_summary": {
+    "BTC": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "ETH": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "USDT": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "BNB": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "SOL": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "XRP": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "USDC": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "ADA": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "AVAX": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "DOGE": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "TRX": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "DOT": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "LINK": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "MATIC": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "TON": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "DAI": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "WBTC": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "SHIB": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "LTC": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "BCH": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "LEO": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "UNI": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "OKB": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "ATOM": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "XLM": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "ETC": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "HBAR": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "CRO": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "APT": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "MKR": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "VET": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "NEAR": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "GRT": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "AAVE": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "ALGO": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "QNT": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "FIL": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "ICP": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "EOS": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "XTZ": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "SAND": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "MANA": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "THETA": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "AXS": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "EGLD": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "BSV": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "XMR": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "KCS": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "TUSD": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "GALA": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "CHZ": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "FLOW": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "HT": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "MINA": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "KDA": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "CRV": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "XEC": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "FTM": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "GT": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "KLAY": {
+      "sources": [],
+      "data_points": 0
+    },
+    "ZEC": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "IOTA": {
+      "sources": [],
+      "data_points": 0
+    },
+    "NEO": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "CAKE": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "FXS": {
+      "sources": [],
+      "data_points": 0
+    },
+    "ENJ": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "COMP": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "SNX": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "ROSE": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "LRC": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "LUNA": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "KAVA": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "BAT": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "DASH": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "WAVES": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "KSM": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "ZIL": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "CELO": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "1INCH": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "ANKR": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "YFI": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "RVN": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "WOO": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "GLM": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "ICX": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "BTG": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "TWT": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "CEL": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "XEM": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "QTUM": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "OMG": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "SXP": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "ZRX": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "ONT": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "IOTX": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "AUDIO": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "STORJ": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "RSR": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "BAND": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    },
+    "OCEAN": {
+      "sources": [
+        "cryptocompare"
+      ],
+      "data_points": 2001
+    }
+  }
+}

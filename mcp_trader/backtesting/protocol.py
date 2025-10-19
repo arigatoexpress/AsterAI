@@ -10,6 +10,10 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 import warnings
 warnings.filterwarnings('ignore')
+import asyncio
+import inspect
+
+from .cost_model import OnChainCostModel, CostModel
 
 
 @dataclass
@@ -121,9 +125,10 @@ class WalkForwardValidator:
 class BacktestEngine:
     """Main backtesting engine with comprehensive metrics."""
     
-    def __init__(self, config: BacktestConfig = None):
+    def __init__(self, config: BacktestConfig = None, cost_model: Optional[CostModel] = None):
         self.config = config or BacktestConfig()
         self.validator = WalkForwardValidator()
+        self.cost_model: CostModel = cost_model or OnChainCostModel(client=None)
     
     def run_backtest(self, 
                     model, 
@@ -214,30 +219,34 @@ class BacktestEngine:
             
             if abs(trade_size) > self.config.min_trade_size / current_price:
                 # Execute trade
-                trade_value = abs(trade_size) * current_price
-                
-                # Calculate costs
-                commission = trade_value * self.config.commission_rate
-                slippage = trade_value * self.config.slippage_rate
+                is_buy = trade_size > 0
+                side = 'buy' if is_buy else 'sell'
+                # Estimate execution price via cost model (orderbook walk if available)
+                exec_price = self._estimate_execution_price(symbol, current_price, abs(trade_size), side, row)
+                trade_value = abs(trade_size) * exec_price
+                # Estimate fees via on-chain commission (fallback to defaults)
+                commission = self._estimate_fee(symbol, trade_value, is_maker=False, row=row)
+                # Slippage cost as difference between exec and base
+                slippage_cost = abs(exec_price - current_price) * abs(trade_size)
                 
                 # Update capital
-                capital -= commission - slippage
+                capital -= commission
                 total_fees += commission
-                total_slippage += slippage
+                total_slippage += slippage_cost
                 
                 # Update position
                 position = target_position
-                position_value = position * current_price
+                position_value = position * exec_price
                 
                 # Log trade
                 trade_log.append({
                     'timestamp': row['timestamp'],
                     'signal': signal,
-                    'price': current_price,
+                    'price': exec_price,
                     'size': trade_size,
                     'value': trade_value,
                     'commission': commission,
-                    'slippage': slippage,
+                    'slippage': slippage_cost,
                     'confidence': confidence
                 })
             
@@ -264,6 +273,43 @@ class BacktestEngine:
             total_slippage,
             total_funding
         )
+
+    def _estimate_execution_price(self, symbol: str, base_price: float, quantity: float,
+                                  side: str, row: pd.Series) -> float:
+        fn = getattr(self.cost_model, 'estimate_execution_price')
+        kwargs = {
+            'symbol': symbol,
+            'base_price': base_price,
+            'quantity': quantity,
+            'side': side,
+            'timestamp': row.get('timestamp', None),
+            'orderbook_snapshot': row.get('orderbook', None)
+        }
+        if inspect.iscoroutinefunction(fn):
+            try:
+                return asyncio.run(fn(**kwargs))
+            except RuntimeError:
+                # Already in an event loop; fallback to base price
+                return base_price
+        else:
+            return fn(**kwargs)  # type: ignore
+
+    def _estimate_fee(self, symbol: str, notional: float, is_maker: bool, row: pd.Series) -> float:
+        fn = getattr(self.cost_model, 'estimate_fee')
+        kwargs = {
+            'symbol': symbol,
+            'notional': notional,
+            'is_maker': is_maker,
+            'timestamp': row.get('timestamp', None)
+        }
+        if inspect.iscoroutinefunction(fn):
+            try:
+                return asyncio.run(fn(**kwargs))
+            except RuntimeError:
+                # Already in an event loop; use default commission rate fallback
+                return notional * self.config.commission_rate
+        else:
+            return fn(**kwargs)  # type: ignore
     
     def _calculate_metrics(self, 
                           equity_curve: pd.Series, 

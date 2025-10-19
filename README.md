@@ -1,4 +1,4 @@
-# AsterAI - Ultra-Performance AI Trading System
+# AsterAI - Professional AI Trading Platform
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-red.svg)](https://pytorch.org/)
@@ -8,15 +8,15 @@
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-Ready-orange.svg)](https://kubernetes.io/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-**Ultra-performance algorithmic trading platform powered by 7 specialized AI models, GPU acceleration, and enterprise-grade cloud infrastructure. Built for maximum capital efficiency from $100 to $10K+ with institutional-grade risk management.**
+**Professional algorithmic trading platform powered by AI models, GPU acceleration, and enterprise-grade cloud infrastructure. Built for capital efficiency with institutional-grade risk management.**
 
 ---
 
 ## Core Capabilities
 
-### Ultra-Performance AI Ensemble System
-- **7 Specialized AI Models**: PPO (Reinforcement Learning), Trend Following, Mean Reversion, Volatility, Order Flow, ML Classifier, and VPIN working in coordinated ensemble
-- **GPU-Accelerated Training**: RTX 5070 Ti optimized with JAX and TensorRT for maximum performance
+### AI Ensemble System
+- **Specialized AI Models**: PPO (Reinforcement Learning), Trend Following, Mean Reversion, Volatility, Order Flow, ML Classifier, and VPIN working in coordinated ensemble
+- **GPU-Accelerated Training**: Optimized with JAX and TensorRT for enhanced performance
 - **Real-Time Adaptation**: Continuous model retraining with systematic A/B testing and hyperparameter optimization
 - **Meta-Learning Engine**: Dynamically learns optimal model weight combinations based on market conditions
 - **Performance-Based Selection**: Automatic switching between models based on real-time performance metrics
@@ -27,10 +27,10 @@
 - **High-Availability Design**: Built for 99.9% uptime with comprehensive monitoring and alerting
 - **Real-Time Observability**: Complete system visibility through advanced dashboards and automated notifications
 
-### Intelligent Capital Scaling System
-- **Conservative Starting Position**: Begins with $100 using highly conservative risk parameters
+### Capital Management System
+- **Conservative Starting Position**: Begins with conservative risk parameters
 - **Performance-Driven Growth**: Progressive scaling based on proven track record and risk-adjusted returns
-- **Four-Tier Capital Structure**: Automatic risk adjustment across capital growth stages ($100 → $10K+)
+- **Multi-Tier Capital Structure**: Automatic risk adjustment across capital growth stages
 - **Automated Compounding**: Systematic reinvestment of profits with optimized position sizing
 
 ### Advanced Risk Management Framework
@@ -43,8 +43,8 @@
 
 ## Key Features
 
-### Ensemble AI Trading System
-- Seven distinct trading models operating in coordinated ensemble formation
+### AI Trading System
+- Multiple trading models operating in coordinated ensemble formation
 - Dynamic meta-learning optimizes model weight allocation in real-time
 - Correlation-aware diversification prevents model overfitting
 - Consensus-based signal generation improves prediction accuracy
@@ -64,8 +64,8 @@
 ### Production-Ready Deployment
 - Cloud-native infrastructure on Google Cloud Platform
 - Comprehensive paper trading validation protocols
-- Automated capital scaling from $100 to $10K+
-- GPU-accelerated training and inference (NVIDIA RTX optimized)
+- Automated capital scaling capabilities
+- GPU-accelerated training and inference
 
 ---
 

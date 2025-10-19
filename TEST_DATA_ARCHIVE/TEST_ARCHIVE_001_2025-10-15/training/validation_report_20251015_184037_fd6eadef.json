@@ -1,0 +1,195 @@
+{
+  "aster_assets": {
+    "total_assets": 78,
+    "valid_assets": 78,
+    "invalid_assets": [],
+    "quality_scores": {
+      "0GUSDT": 0.8488126984126984,
+      "1000BONKUSDT": 0.8708888888888889,
+      "1000CHEEMSUSDT": 0.7862181818181818,
+      "1000FLOKIUSDT": 0.8708888888888889,
+      "1000PEPEUSDT": 0.8708888888888889,
+      "1000SHIBUSDT": 0.8708888888888889,
+      "1INCHUSDT": 0.8708888888888889,
+      "2ZUSDT": 0.8282025974025974,
+      "4USDT": 0.8145446808510638,
+      "AAPLUSDT": 0.8708888888888889,
+      "AAVEUSDT": 0.8708888888888889,
+      "ADAUSDT": 0.8708888888888889,
+      "AIAUSDT": 0.8488126984126984,
+      "AIOUSDT": 0.8708888888888889,
+      "AIUSDT": 0.8708888888888889,
+      "ALGOUSDT": 0.8708888888888889,
+      "ALICEUSDT": 0.8708888888888889,
+      "AMZNUSDT": 0.8708888888888889,
+      "APEUSDT": 0.8708888888888889,
+      "BTCUSDT": 0.8733247311827956,
+      "COMPUSDT": 0.8733247311827956,
+      "DOTUSDT": 0.8733247311827956,
+      "ETHUSDT": 0.8733247311827956,
+      "LINKUSDT": 0.8733247311827956,
+      "SOLUSDT": 0.8733247311827956,
+      "UNIUSDT": 0.8733247311827956
+    },
+    "data_ranges": {
+      "0GUSDT": {
+        "points": 126,
+        "price_range": "$2.13 - $5.06",
+        "volume_avg": "393991.60"
+      },
+      "1000BONKUSDT": {
+        "points": 180,
+        "price_range": "$0.01 - $0.03",
+        "volume_avg": "3229876.77"
+      },
+      "1000CHEEMSUSDT": {
+        "points": 11,
+        "price_range": "$0.00 - $0.00",
+        "volume_avg": "10278466.91"
+      },
+      "1000FLOKIUSDT": {
+        "points": 180,
+        "price_range": "$0.07 - $0.11",
+        "volume_avg": "939652.82"
+      },
+      "1000PEPEUSDT": {
+        "points": 180,
+        "price_range": "$0.01 - $0.01",
+        "volume_avg": "168941835.54"
+      },
+      "1000SHIBUSDT": {
+        "points": 180,
+        "price_range": "$0.01 - $0.01",
+        "volume_avg": "3024723.94"
+      },
+      "1INCHUSDT": {
+        "points": 180,
+        "price_range": "$0.20 - $0.20",
+        "volume_avg": "0.00"
+      },
+      "2ZUSDT": {
+        "points": 77,
+        "price_range": "$0.25 - $0.63",
+        "volume_avg": "448921.21"
+      },
+      "4USDT": {
+        "points": 47,
+        "price_range": "$0.07 - $0.27",
+        "volume_avg": "37031894.06"
+      },
+      "AAPLUSDT": {
+        "points": 180,
+        "price_range": "$229.59 - $262.77",
+        "volume_avg": "43.64"
+      },
+      "AAVEUSDT": {
+        "points": 180,
+        "price_range": "$223.91 - $310.76",
+        "volume_avg": "545.03"
+      },
+      "ADAUSDT": {
+        "points": 180,
+        "price_range": "$0.63 - $0.93",
+        "volume_avg": "460724.47"
+      },
+      "AIAUSDT": {
+        "points": 126,
+        "price_range": "$0.25 - $3.42",
+        "volume_avg": "186445.23"
+      },
+      "AIOUSDT": {
+        "points": 180,
+        "price_range": "$0.10 - $0.19",
+        "volume_avg": "42639.17"
+      },
+      "AIUSDT": {
+        "points": 180,
+        "price_range": "$0.69 - $0.69",
+        "volume_avg": "0.00"
+      },
+      "ALGOUSDT": {
+        "points": 180,
+        "price_range": "$0.29 - $0.29",
+        "volume_avg": "0.00"
+      },
+      "ALICEUSDT": {
+        "points": 180,
+        "price_range": "$1.09 - $1.09",
+        "volume_avg": "0.00"
+      },
+      "AMZNUSDT": {
+        "points": 180,
+        "price_range": "$213.39 - $236.00",
+        "volume_avg": "20.11"
+      },
+      "APEUSDT": {
+        "points": 180,
+        "price_range": "$0.35 - $0.61",
+        "volume_avg": "19986.51"
+      },
+      "BTCUSDT": {
+        "points": 186,
+        "price_range": "$108937.40 - $125410.00",
+        "volume_avg": "30743.55"
+      },
+      "COMPUSDT": {
+        "points": 186,
+        "price_range": "$48.63 - $48.63",
+        "volume_avg": "0.00"
+      },
+      "DOTUSDT": {
+        "points": 186,
+        "price_range": "$2.92 - $4.63",
+        "volume_avg": "15224.29"
+      },
+      "ETHUSDT": {
+        "points": 186,
+        "price_range": "$3744.90 - $4722.00",
+        "volume_avg": "298415.54"
+      },
+      "LINKUSDT": {
+        "points": 186,
+        "price_range": "$17.09 - $24.76",
+        "volume_avg": "21489.23"
+      },
+      "SOLUSDT": {
+        "points": 186,
+        "price_range": "$176.75 - $248.20",
+        "volume_avg": "531180.16"
+      },
+      "UNIUSDT": {
+        "points": 186,
+        "price_range": "$5.79 - $9.65",
+        "volume_avg": "6708.80"
+      }
+    },
+    "missing_data": {}
+  },
+  "technical_indicators": {
+    "indicators_checked": [
+      "sma_5",
+      "sma_10",
+      "sma_20",
+      "rsi",
+      "volatility",
+      "price_change",
+      "high_low_ratio"
+    ],
+    "valid_indicators": [
+      "sma_5",
+      "price_change",
+      "high_low_ratio"
+    ],
+    "invalid_indicators": [
+      "sma_10",
+      "sma_20",
+      "rsi",
+      "volatility"
+    ],
+    "quality_score": 0.42857142857142855
+  },
+  "macro_data": {},
+  "sentiment_data": {},
+  "overall_quality": 0.7142857142857143,
+  "timestamp": "2025-10-15T18:40:37.139092"
+}

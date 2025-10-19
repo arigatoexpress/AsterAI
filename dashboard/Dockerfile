@@ -22,11 +22,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Production stage
 FROM base as production
 
-# Copy application code
+# Copy application code and data
 COPY unified_trading_dashboard.py .
-COPY ../training_results ./training_results/
-COPY ../logs ./logs/
-COPY ../models ./models/
+COPY matrix_theme.css .
+COPY deploy_to_gcp.sh .
+
+# Create directories and add sample data if files don't exist
+RUN mkdir -p training_results logs models data
 
 # Create non-root user
 RUN useradd --create-home --shell /bin/bash app \

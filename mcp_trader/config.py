@@ -1,7 +1,8 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 from dataclasses import dataclass
 from typing import Dict, List, Optional
+import re
 
 
 @dataclass
@@ -20,6 +21,7 @@ class TradingPair:
 
 class Settings(BaseSettings):
     """Aster DEX focused configuration settings."""
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=False, extra="allow")
     aster_api_key: str | None = None
     aster_api_secret: str | None = None
     aster_base_url: str = "https://fapi.asterdex.com"
@@ -44,15 +46,51 @@ class Settings(BaseSettings):
     max_daily_loss: float = 0.15  # 15%
     volatility_multiplier: float = 1.5
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
+    def validate(self) -> None:
+        """Fail-fast schema and range validation for critical settings."""
+        # API configuration
+        if self.aster_base_url and not re.match(r"^https?://", self.aster_base_url):
+            raise ValueError("aster_base_url must start with http:// or https://")
+        if self.aster_ws_url and not re.match(r"^wss?://", self.aster_ws_url):
+            raise ValueError("aster_ws_url must start with ws:// or wss://")
+
+        # Risk bounds
+        if not (0 < self.max_portfolio_risk <= 0.5):
+            raise ValueError("max_portfolio_risk must be in (0, 0.5]")
+        if not (0 < self.max_single_position_risk <= self.max_portfolio_risk):
+            raise ValueError("max_single_position_risk must be >0 and <= max_portfolio_risk")
+        if not (1 <= self.max_concurrent_positions <= 50):
+            raise ValueError("max_concurrent_positions must be between 1 and 50")
+        if not (0 < self.stop_loss_threshold < 1):
+            raise ValueError("stop_loss_threshold must be in (0,1)")
+        if not (0 < self.take_profit_threshold < 1):
+            raise ValueError("take_profit_threshold must be in (0,1)")
+        if not (0 < self.max_daily_loss < 1):
+            raise ValueError("max_daily_loss must be in (0,1)")
+
+        # Position sizing bounds
+        if not (0 < self.min_position_size_usd <= self.max_position_size_usd):
+            raise ValueError("min_position_size_usd must be >0 and <= max_position_size_usd")
+        if not (self.max_position_size_usd <= 1_000_000):
+            raise ValueError("max_position_size_usd is unreasonably high")
+
+        # Grid strategy parameters
+        if not (1 <= self.grid_levels <= 200):
+            raise ValueError("grid_levels must be between 1 and 200")
+        if not (0 < self.grid_spacing_percent <= 50):
+            raise ValueError("grid_spacing_percent must be in (0, 50]")
+        if not (self.grid_position_size_usd >= self.min_position_size_usd):
+            raise ValueError("grid_position_size_usd must be >= min_position_size_usd")
+
+    
 
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
     """Get cached application settings instance."""
-    return Settings()
+    s = Settings()
+    s.validate()
+    return s
 
 
 # Core tokens available on Aster DEX for autonomous trading

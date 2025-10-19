@@ -1,11 +1,30 @@
 import pandas as pd
 import numpy as np
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Any
 from datetime import datetime, timedelta
+from dataclasses import dataclass
+import warnings
+warnings.filterwarnings('ignore')
 
+# Import proper backtesting framework
+try:
+    from mcp_trader.backtesting.enhanced_backtester import (
+        EnhancedBacktester, BacktestConfig, BacktestResult,
+        MovingAverageCrossoverStrategy, RSIStrategy, BollingerBandsStrategy
+    )
+    from mcp_trader.backtesting.historical_data_collector import HistoricalDataCollector
+    ENHANCED_BACKTESTER_AVAILABLE = True
+except ImportError:
+    ENHANCED_BACKTESTER_AVAILABLE = False
+
+# Fallback imports for basic functionality
+try:
 from strategies.hft.ensemble_model import EnsembleModel
 from strategies.hft.risk_manager import RiskManager
 from data_pipeline.feature_engineering import ComprehensiveFeatureEngineer
+    BASIC_COMPONENTS_AVAILABLE = True
+except ImportError:
+    BASIC_COMPONENTS_AVAILABLE = False
 
 class WalkForwardAnalyzer:
     """
@@ -64,25 +83,305 @@ class WalkForwardAnalyzer:
         return aggregated
         
     def _backtest_period(self, data: pd.DataFrame) -> Dict[str, float]:
-        """Run backtest for a single period and calculate metrics."""
-        # Placeholder backtest logic
-        # In reality, this would simulate trades using the model predictions
-        # and apply risk management
-        
-        num_steps = len(data)
-        returns = np.random.normal(0.001, 0.02, num_steps)  # Simulated returns
-        cumulative = (1 + pd.Series(returns)).cumprod()
-        
-        # Calculate metrics
-        sharpe = np.mean(returns) / np.std(returns) * np.sqrt(252 * 24) if np.std(returns) > 0 else 0  # Annualized
-        max_dd = (cumulative / cumulative.cummax() - 1).min()
-        total_return = cumulative.iloc[-1] - 1
+        """Run backtest for a single period and calculate metrics using proper market data."""
+
+        if ENHANCED_BACKTESTER_AVAILABLE:
+            # Use the proper enhanced backtester
+            return self._backtest_with_enhanced_engine(data)
+        elif BASIC_COMPONENTS_AVAILABLE:
+            # Fallback to basic components
+            return self._backtest_with_basic_components(data)
+        else:
+            # Ultimate fallback with realistic simulation
+            return self._backtest_with_realistic_simulation(data)
+
+    def _backtest_with_enhanced_engine(self, data: pd.DataFrame) -> Dict[str, float]:
+        """Use the enhanced backtester for proper calculation."""
+        try:
+            # Configure backtester
+            config = BacktestConfig(
+                initial_balance=10000.0,
+                commission_rate=0.001,  # 0.1% commission
+                slippage_rate=0.0005,   # 0.05% slippage
+                max_leverage=5.0
+            )
+
+            backtester = EnhancedBacktester(config)
+
+            # Create a simple strategy for testing
+            strategy = MovingAverageCrossoverStrategy({'fast_ma': 10, 'slow_ma': 30})
+
+            # Run backtest
+            result = asyncio.run(backtester.run_backtest(strategy, strategy.config, data, ['TEST']))
+
+            return {
+                'sharpe': result.sharpe_ratio,
+                'max_drawdown': result.max_drawdown,
+                'total_return': result.total_return,
+                'num_trades': result.total_trades,
+                'win_rate': result.win_rate,
+                'profit_factor': result.profit_factor
+            }
+
+        except Exception as e:
+            print(f"Enhanced backtester failed: {e}")
+            return self._backtest_with_realistic_simulation(data)
+
+    def _backtest_with_basic_components(self, data: pd.DataFrame) -> Dict[str, float]:
+        """Use basic components for backtesting."""
+        try:
+            # Use feature engineering and models for signal generation
+            feature_engineer = ComprehensiveFeatureEngineer()
+
+            # Create features
+            features = feature_engineer.create_all_features(data)
+
+            # Simple signal generation based on price momentum
+            if len(features) > 20:
+                # Calculate simple moving averages
+                features['sma_10'] = features['close'].rolling(10).mean()
+                features['sma_30'] = features['close'].rolling(30).mean()
+
+                # Generate signals based on MA crossover
+                features['signal'] = 0
+                features.loc[features['sma_10'] > features['sma_30'], 'signal'] = 1
+                features.loc[features['sma_10'] < features['sma_30'], 'signal'] = -1
+
+                # Simulate trading
+                return self._simulate_trading_from_signals(features)
+            else:
+                return self._backtest_with_realistic_simulation(data)
+
+        except Exception as e:
+            print(f"Basic components backtester failed: {e}")
+            return self._backtest_with_realistic_simulation(data)
+
+    def _simulate_trading_from_signals(self, features: pd.DataFrame) -> Dict[str, float]:
+        """Simulate actual trading based on signals."""
+
+        initial_capital = 10000.0
+        commission_rate = 0.001  # 0.1%
+        position_size = 0.1  # 10% of capital per trade
+
+        capital = initial_capital
+        position = 0
+        trades = []
+        equity_curve = [initial_capital]
+
+        # Simulate trading day by day
+        for i in range(1, len(features)):
+            current_price = features['close'].iloc[i]
+            previous_price = features['close'].iloc[i-1]
+            signal = features['signal'].iloc[i]
+
+            # Check for position changes
+            if signal != 0 and position == 0:
+                # Open position
+                position_value = capital * position_size
+                shares = position_value / current_price
+                cost = shares * current_price * (1 + commission_rate)
+                position = shares if signal > 0 else -shares
+                capital -= cost
+                trades.append({
+                    'type': 'buy' if signal > 0 else 'sell',
+                    'price': current_price,
+                    'shares': abs(position),
+                    'value': position_value,
+                    'commission': cost - position_value
+                })
+
+            elif signal == 0 and position != 0:
+                # Close position
+                pnl = position * (current_price - (position * previous_price / abs(position) if position != 0 else current_price))
+                pnl -= abs(position) * current_price * commission_rate
+                capital += pnl + (abs(position) * current_price)
+                trades.append({
+                    'type': 'sell' if position > 0 else 'buy',
+                    'price': current_price,
+                    'pnl': pnl,
+                    'commission': abs(position) * current_price * commission_rate
+                })
+                position = 0
+
+            # Update equity curve
+            current_equity = capital + (position * current_price if position != 0 else 0)
+            equity_curve.append(current_equity)
+
+        # Calculate final metrics
+        final_equity = equity_curve[-1]
+        total_return = (final_equity - initial_capital) / initial_capital
+
+        # Calculate Sharpe ratio
+        equity_returns = pd.Series(equity_curve).pct_change().dropna()
+        if len(equity_returns) > 0:
+            sharpe = np.mean(equity_returns) / np.std(equity_returns) * np.sqrt(252) if np.std(equity_returns) > 0 else 0
+        else:
+            sharpe = 0
+
+        # Calculate max drawdown
+        cumulative = pd.Series(equity_curve)
+        running_max = cumulative.expanding().max()
+        drawdowns = (cumulative - running_max) / running_max
+        max_drawdown = drawdowns.min()
+
+        # Calculate win rate and profit factor
+        winning_trades = sum(1 for trade in trades if trade.get('pnl', 0) > 0)
+        losing_trades = sum(1 for trade in trades if trade.get('pnl', 0) < 0)
+        win_rate = winning_trades / len(trades) if trades else 0
+
+        total_profits = sum(trade.get('pnl', 0) for trade in trades if trade.get('pnl', 0) > 0)
+        total_losses = abs(sum(trade.get('pnl', 0) for trade in trades if trade.get('pnl', 0) < 0))
+        profit_factor = total_profits / total_losses if total_losses > 0 else 0
+
+        return {
+            'sharpe': sharpe,
+            'max_drawdown': max_drawdown,
+            'total_return': total_return,
+            'num_trades': len(trades),
+            'win_rate': win_rate,
+            'profit_factor': profit_factor,
+            'final_equity': final_equity
+        }
+
+    def _backtest_with_realistic_simulation(self, data: pd.DataFrame) -> Dict[str, float]:
+        """Realistic simulation using market data patterns."""
+
+        if len(data) < 50:  # Need enough data for meaningful simulation
+            return {
+                'sharpe': 0,
+                'max_drawdown': 0,
+                'total_return': 0,
+                'num_trades': 0,
+                'win_rate': 0,
+                'profit_factor': 0,
+                'final_equity': 10000
+            }
+
+        # Use actual price movements but with realistic position sizing
+        initial_capital = 10000.0
+        commission_rate = 0.001
+        position_size = 0.05  # 5% of capital per trade
+
+        # Simple trend-following strategy based on price momentum
+        price_changes = data['close'].pct_change()
+        signals = []
+
+        for i in range(len(price_changes)):
+            if i < 20:  # Need history for trend detection
+                signals.append(0)
+                continue
+
+            # Simple trend detection
+            recent_prices = data['close'].iloc[i-20:i]
+            trend = (recent_prices.iloc[-1] - recent_prices.iloc[0]) / recent_prices.iloc[0]
+
+            if trend > 0.02:  # Strong uptrend
+                signals.append(1)
+            elif trend < -0.02:  # Strong downtrend
+                signals.append(-1)
+            else:
+                signals.append(0)
+
+        # Simulate trading
+        capital = initial_capital
+        position = 0
+        trades = []
+        equity_curve = [initial_capital]
+
+        for i in range(1, len(data)):
+            current_price = data['close'].iloc[i]
+            signal = signals[i]
+
+            # Execute trades based on signals
+            if signal == 1 and position <= 0:  # Buy signal and not already long
+                if position < 0:  # Close short position first
+                    pnl = -position * (current_price - abs(position) * data['close'].iloc[i-1] / abs(position))
+                    pnl -= abs(position) * current_price * commission_rate
+                    capital += pnl + (abs(position) * current_price)
+                    position = 0
+
+                # Open long position
+                position_value = capital * position_size
+                shares = position_value / current_price
+                cost = shares * current_price * (1 + commission_rate)
+                position = shares
+                capital -= cost
+
+                trades.append({
+                    'type': 'buy',
+                    'price': current_price,
+                    'shares': shares,
+                    'value': position_value,
+                    'commission': cost - position_value
+                })
+
+            elif signal == -1 and position >= 0:  # Sell signal and not already short
+                if position > 0:  # Close long position first
+                    pnl = position * (current_price - position * data['close'].iloc[i-1] / position)
+                    pnl -= position * current_price * commission_rate
+                    capital += pnl + (position * current_price)
+                    position = 0
+
+                # Open short position
+                position_value = capital * position_size
+                shares = position_value / current_price
+                cost = shares * current_price * (1 + commission_rate)
+                position = -shares
+                capital -= cost
+
+                trades.append({
+                    'type': 'sell',
+                    'price': current_price,
+                    'shares': shares,
+                    'value': position_value,
+                    'commission': cost - position_value
+                })
+
+            # Update equity
+            if position != 0:
+                if position > 0:  # Long position
+                    current_equity = capital + (position * current_price)
+                else:  # Short position
+                    current_equity = capital + (abs(position) * (2 * data['close'].iloc[i-1] - current_price))
+            else:
+                current_equity = capital
+
+            equity_curve.append(current_equity)
+
+        # Calculate final metrics
+        final_equity = equity_curve[-1]
+        total_return = (final_equity - initial_capital) / initial_capital
+
+        # Calculate Sharpe ratio
+        equity_returns = pd.Series(equity_curve).pct_change().dropna()
+        if len(equity_returns) > 0:
+            sharpe = np.mean(equity_returns) / np.std(equity_returns) * np.sqrt(252) if np.std(equity_returns) > 0 else 0
+        else:
+            sharpe = 0
+
+        # Calculate max drawdown
+        cumulative = pd.Series(equity_curve)
+        running_max = cumulative.expanding().max()
+        drawdowns = (cumulative - running_max) / running_max
+        max_drawdown = drawdowns.min()
+
+        # Calculate win rate and profit factor
+        winning_trades = sum(1 for trade in trades if trade.get('pnl', 0) > 0)
+        losing_trades = sum(1 for trade in trades if trade.get('pnl', 0) < 0)
+        win_rate = winning_trades / len(trades) if trades else 0
+
+        total_profits = sum(trade.get('pnl', 0) for trade in trades if trade.get('pnl', 0) > 0)
+        total_losses = abs(sum(trade.get('pnl', 0) for trade in trades if trade.get('pnl', 0) < 0))
+        profit_factor = total_profits / total_losses if total_losses > 0 else 0
         
         return {
             'sharpe': sharpe,
-            'max_drawdown': max_dd,
+            'max_drawdown': max_drawdown,
             'total_return': total_return,
-            'num_trades': num_steps
+            'num_trades': len(trades),
+            'win_rate': win_rate,
+            'profit_factor': profit_factor,
+            'final_equity': final_equity
         }
         
     def _aggregate_results(self, results: List[Dict]) -> Dict[str, float]:
@@ -90,13 +389,26 @@ class WalkForwardAnalyzer:
         if not results:
             return {}
             
-        return {
-            'sharpe': np.mean([r['sharpe'] for r in results]),
-            'max_drawdown': np.mean([r['max_drawdown'] for r in results]),
-            'total_return': np.sum([r['total_return'] for r in results]),
-            'avg_num_trades': np.mean([r['num_trades'] for r in results]),
+        # Handle different metric keys that might be returned
+        aggregated = {
+            'sharpe': np.mean([r.get('sharpe', 0) for r in results]),
+            'max_drawdown': np.mean([r.get('max_drawdown', 0) for r in results]),
+            'total_return': np.sum([r.get('total_return', 0) for r in results]),
+            'num_trades': sum([r.get('num_trades', 0) for r in results]),
             'num_periods': len(results)
         }
+
+        # Add additional metrics if available
+        if any('win_rate' in r for r in results):
+            aggregated['avg_win_rate'] = np.mean([r.get('win_rate', 0) for r in results])
+
+        if any('profit_factor' in r for r in results):
+            aggregated['avg_profit_factor'] = np.mean([r.get('profit_factor', 0) for r in results])
+
+        if any('final_equity' in r for r in results):
+            aggregated['final_equity'] = np.mean([r.get('final_equity', 10000) for r in results])
+
+        return aggregated
 
 class MonteCarloTester:
     """

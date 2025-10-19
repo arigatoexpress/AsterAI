@@ -10,6 +10,7 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 from dataclasses import dataclass
 from enum import Enum
+import uuid
 
 from ..execution.aster_client import (
     AsterClient, OrderSide, OrderType, KlineInterval,
@@ -21,6 +22,8 @@ from .strategies.grid_strategy import GridStrategy
 from .strategies.volatility_strategy import VolatilityStrategy
 from ..risk.volatility.risk_manager import VolatilityRiskManager
 from ..data.aster_feed import AsterDataFeed
+from ..backtesting.cost_model import OnChainCostModel
+from ..monitoring.metrics import Metrics
 
 logger = logging.getLogger(__name__)  # symbol -> grid config
 
@@ -69,10 +72,16 @@ class AutonomousTrader:
         self.total_trades = 0
         self.winning_trades = 0
         self.start_time = datetime.now()
+        self.start_of_day_value = 0.0
+        self._last_pnl_reset_date = datetime.utcnow().date()
 
         # Control flags
         self.is_running = False
         self.emergency_stop = False
+        
+        # Observability and cost model
+        self.metrics = Metrics()
+        self.cost_model = OnChainCostModel(client=self.aster_client)
 
         logger.info(f"AutonomousTrader initialized in {self.trading_mode.value} mode")
 
@@ -247,6 +256,39 @@ class AutonomousTrader:
 
     async def _execute_decisions(self, decisions: List[TradingDecision]):
         """Execute trading decisions with risk management."""
+        # Global risk guard: daily loss limit and exposure cap
+        try:
+            equity = self.portfolio_state.total_balance + self.portfolio_state.unrealized_pnl
+            # Reset daily baseline at UTC midnight
+            if datetime.utcnow().date() != self._last_pnl_reset_date:
+                self._last_pnl_reset_date = datetime.utcnow().date()
+                self.start_of_day_value = equity
+                self.daily_pnl = 0.0
+
+            if self.start_of_day_value == 0.0:
+                self.start_of_day_value = equity
+
+            self.daily_pnl = equity - self.start_of_day_value
+            self.metrics.observe('daily_pnl', self.daily_pnl, {'mode': self.trading_mode.value})
+
+            max_daily_loss_pct = getattr(self.settings, 'max_daily_loss', 0.15)
+            if self.daily_pnl < -max_daily_loss_pct * self.start_of_day_value:
+                logger.warning("Daily loss limit reached - pausing trading and triggering emergency stop")
+                self.metrics.inc('kill_switch_daily_loss', 1)
+                self.emergency_stop = True
+                return
+
+            # Exposure cap (portfolio-level)
+            total_exposure = self.portfolio_state.total_positions_value
+            max_portfolio_risk = getattr(self.settings, 'max_portfolio_risk', 0.1)
+            if self.portfolio_state.total_balance > 0 and \
+               total_exposure > max_portfolio_risk * self.portfolio_state.total_balance:
+                logger.warning("Exposure limit exceeded - skipping new trades this cycle")
+                self.metrics.inc('exposure_skipped', 1)
+                return
+        except Exception as risk_e:
+            logger.error(f"Global risk guard failed: {risk_e}")
+
         for decision in decisions:
             try:
                 # Risk assessment
@@ -268,12 +310,33 @@ class AutonomousTrader:
     async def _execute_single_decision(self, decision: TradingDecision):
         """Execute a single trading decision."""
         try:
+            # MEV/slippage guard: estimate execution price vs current to cap price impact
+            current_ticker = await self.data_feed.get_ticker(decision.symbol)
+            base_price = current_ticker['last'] if current_ticker and 'last' in current_ticker else decision.price or 0.0
+            side = 'buy' if decision.action == 'BUY' else 'sell'
+            est_price = await self.cost_model.estimate_execution_price(
+                symbol=decision.symbol,
+                base_price=base_price,
+                quantity=abs(decision.quantity),
+                side=side
+            )
+            price_impact_pct = abs(est_price - (base_price or est_price)) / (base_price or est_price or 1.0)
+            max_price_impact = self.config.get('mev', {}).get('max_price_impact_pct', 0.08)
+            if price_impact_pct > max_price_impact:
+                self.metrics.inc('trade_rejected_price_impact', 1, {'symbol': decision.symbol})
+                logger.warning(f"Trade rejected due to price impact {price_impact_pct:.2%} > {max_price_impact:.2%}")
+                return
+
+            # Correlation ID for tracing
+            corr_id = f"corr-{uuid.uuid4().hex[:12]}"
+
             if decision.action == "BUY":
                 await self.aster_client.place_order(
                     symbol=decision.symbol,
                     side=OrderSide.BUY,
                     order_type=OrderType.MARKET,
-                    quantity=decision.quantity
+                    quantity=decision.quantity,
+                    new_client_order_id=corr_id
                 )
 
             elif decision.action == "SELL":
@@ -281,17 +344,20 @@ class AutonomousTrader:
                     symbol=decision.symbol,
                     side=OrderSide.SELL,
                     order_type=OrderType.MARKET,
-                    quantity=decision.quantity
+                    quantity=decision.quantity,
+                    new_client_order_id=corr_id
                 )
 
             elif decision.action == "ADJUST_GRID":
                 # Grid-specific adjustments
                 await self._adjust_grid_position(decision)
 
-            logger.info(f"Executed {decision.action} order for {decision.symbol}: {decision.quantity}")
+            logger.info(f"Executed {decision.action} order for {decision.symbol}: {decision.quantity} id={corr_id}")
+            self.metrics.inc('trade_executed', 1, {'symbol': decision.symbol, 'action': decision.action, 'corr_id': corr_id})
 
         except Exception as e:
             logger.error(f"Failed to execute {decision.action} for {decision.symbol}: {e}")
+            self.metrics.inc('trade_execute_error', 1, {'symbol': decision.symbol, 'action': decision.action})
             raise
 
     async def _adjust_grid_position(self, decision: TradingDecision):
@@ -427,9 +493,22 @@ class AutonomousTrader:
 
     def _update_performance_metrics(self):
         """Update trading performance metrics."""
-        # This would track daily P&L, win rate, etc.
-        # Implementation depends on specific metrics needed
-        pass
+        try:
+            equity = self.portfolio_state.total_balance + self.portfolio_state.unrealized_pnl
+            # Reset daily baseline at UTC midnight
+            if datetime.utcnow().date() != self._last_pnl_reset_date:
+                self._last_pnl_reset_date = datetime.utcnow().date()
+                self.start_of_day_value = equity
+                self.daily_pnl = 0.0
+
+            if self.start_of_day_value == 0.0:
+                self.start_of_day_value = equity
+
+            self.daily_pnl = equity - self.start_of_day_value
+            self.metrics.observe('equity', equity, {'mode': self.trading_mode.value})
+            self.metrics.observe('daily_pnl', self.daily_pnl, {'mode': self.trading_mode.value})
+        except Exception as e:
+            logger.error(f"Performance metric update failed: {e}")
 
     async def _log_status_update(self, market_regime: MarketRegime):
         """Log periodic status updates."""

@@ -41,7 +41,9 @@ torchaudio>=2.0.0
 transformers>=4.30.0
 stable-baselines3>=2.0.0
 gymnasium>=0.29.0
-ray[rllib]>=2.6.0
+# ray is optional; Windows/Python 3.13 wheels may be unavailable.
+# Install manually if needed: pip install -U ray==2.9.3
+# ray[rllib]>=2.6.0
 
 # Traditional ML
 scikit-learn>=1.3.0
@@ -68,7 +70,7 @@ arch>=6.0.0
 # ta-lib>=0.4.25  # Optional: requires binary install, see docs
 
 # Technical Analysis (pure Python alternative)
-pandas-ta>=0.3.14b0
+# pandas-ta>=0.3.14b0  # Removed - package doesn't exist
 ta>=0.11.0
 
 # Data Storage and Processing

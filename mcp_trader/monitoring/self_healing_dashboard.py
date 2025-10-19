@@ -11,8 +11,32 @@ from typing import Dict, Any, List, Optional
 import asyncio
 import logging
 from datetime import datetime
+import subprocess
+import json
 
-logger = logging.getLogger(__name__)
+        logger = logging.getLogger(__name__)
+
+    def test_endpoint_with_playwright(self, url: str, action: str = "navigate"):
+        """Test an endpoint using Playwright MCP."""
+        try:
+            if action == "navigate":
+                script = f"browser_navigate(url='{url}')\nbrowser_snapshot()"
+            elif action == "screenshot":
+                script = f"browser_navigate(url='{url}')\nbrowser_take_screenshot(filename='endpoint_test.png')"
+            else:
+                script = f"browser_navigate(url='{url}')"
+
+            result = subprocess.run([
+                "docker", "run", "-i", "--rm", "mcp/playwright"
+            ], input=script.encode(), capture_output=True, text=True, timeout=30)
+
+            if result.returncode == 0:
+                return {"status": "success", "output": result.stdout}
+            else:
+                return {"status": "error", "error": result.stderr}
+        except Exception as e:
+            logger.error(f"Playwright test error: {e}")
+            return {"status": "error", "message": str(e)}
 
 
 class SystemStatusResponse(BaseModel):

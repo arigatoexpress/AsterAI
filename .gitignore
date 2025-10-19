@@ -148,6 +148,54 @@ tmp/
 secrets/
 secret/
 
+# Local development files (keep on device, exclude from git)
+asterai_env/
+asterai_env_fresh/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+.venv311/
+
+# Local test and development files
+test_dashboard.py
+local_test_results.txt
+improve_output.log
+output.txt
+dashboard.log
+gpu_verification_report.txt
+backtest_validation_report.txt
+local_training/
+training_results/
+visual_reports/
+GPU_BACKTESTING_SUMMARY/
+TEST_DATA_ARCHIVE/
+
+# Generated reports and outputs
+*_report.txt
+*_report.json
+*_results.txt
+*_results.json
+*_summary.txt
+*_summary.json
+optimal_trading_config_*.json
+backtest_20251015_*.json
+system_status.json
+SECURITY_AUDIT_REPORT.json
+security_audit_results.json
+
+# Archive and backup files
+archive/
+backtest_results/
+logs/
+
 # IDE
 .vscode/
 .idea/

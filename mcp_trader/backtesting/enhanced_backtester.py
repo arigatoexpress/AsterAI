@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from abc import ABC, abstractmethod
 import warnings
 warnings.filterwarnings('ignore')
+from .cost_model import OnChainCostModel
 
 logger = logging.getLogger(__name__)
 
@@ -149,6 +150,7 @@ class EnhancedBacktester:
     def __init__(self, config: BacktestConfig):
         self.config = config
         self.results: Dict[str, BacktestResult] = {}
+        self.cost_model = OnChainCostModel(client=None)
 
     async def run_backtest(self,
                           strategy_class: Callable,
@@ -222,10 +224,29 @@ class EnhancedBacktester:
             if signal == 1 and position == 0:  # Buy signal
                 # Calculate position size (simple fixed percentage)
                 position_size = balance * 0.1  # 10% of balance
-                commission = position_size * self.config.commission_rate
-                slippage = position_size * self.config.slippage_rate
+                # Estimate execution with on-chain model (fallback to base if needed)
+                try:
+                    actual_price = await self.cost_model.estimate_execution_price(
+                        symbol=symbols[0],
+                        base_price=current_price,
+                        quantity=position_size / max(current_price, 1e-9),
+                        side='buy',
+                        timestamp=idx
+                    )
+                except Exception:
+                    actual_price = current_price
 
-                actual_price = current_price * (1 + self.config.slippage_rate)
+                try:
+                    commission = await self.cost_model.estimate_fee(
+                        symbol=symbols[0],
+                        notional=position_size,
+                        is_maker=False,
+                        timestamp=idx
+                    )
+                except Exception:
+                    commission = position_size * self.config.commission_rate
+                slippage = max(0.0, actual_price - current_price) * (position_size / max(actual_price, 1e-9))
+
                 position = position_size / actual_price
                 entry_price = actual_price
                 balance -= (position_size + commission + slippage)
@@ -243,9 +264,26 @@ class EnhancedBacktester:
 
             elif signal == -1 and position > 0:  # Sell signal
                 # Calculate exit
-                exit_price = current_price * (1 - self.config.slippage_rate)
+                try:
+                    exit_price = await self.cost_model.estimate_execution_price(
+                        symbol=symbols[0],
+                        base_price=current_price,
+                        quantity=position,
+                        side='sell',
+                        timestamp=idx
+                    )
+                except Exception:
+                    exit_price = current_price
                 exit_value = position * exit_price
-                commission = exit_value * self.config.commission_rate
+                try:
+                    commission = await self.cost_model.estimate_fee(
+                        symbol=symbols[0],
+                        notional=exit_value,
+                        is_maker=False,
+                        timestamp=idx
+                    )
+                except Exception:
+                    commission = exit_value * self.config.commission_rate
 
                 pnl = exit_value - (position * entry_price) - commission
                 balance += exit_value - commission

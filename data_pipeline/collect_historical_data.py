@@ -15,6 +15,8 @@ import argparse
 from datetime import datetime, timedelta
 from pathlib import Path
 import sys
+import subprocess
+import json
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -213,6 +215,47 @@ class DataCollectionManager:
             print(f"Date Range: {quality_report['oldest_data']} to {quality_report['newest_data']}")
 
         return quality_report
+
+    async def scrape_dynamic_data(self, url: str = "https://coinmarketcap.com", symbols: list = None):
+        """Scrape dynamic web data using Playwright MCP for enhanced data collection."""
+        if symbols is None:
+            symbols = ["BTC", "ETH"]
+
+        logger.info(f"Scraping dynamic data from {url} for symbols: {symbols}")
+
+        try:
+            # Use Playwright to navigate and extract data
+            script = f"""
+            browser_navigate(url='{url}')
+            browser_wait_for(time=5)
+            # Extract price data (customize selector based on site)
+            result = browser_evaluate(function="() => {{
+                let data = {{}};
+                // Example: Scrape prices (adjust selectors for real site)
+                document.querySelectorAll('.price').forEach((el, i) => {{
+                    data['price_' + i] = el.textContent;
+                }});
+                return JSON.stringify(data);
+            }}")
+            print(result)
+            """
+
+            result = subprocess.run([
+                "docker", "run", "-i", "--rm", "mcp/playwright"
+            ], input=script.encode(), capture_output=True, text=True, timeout=30)
+
+            if result.returncode == 0:
+                # Parse output (assuming JSON)
+                data = json.loads(result.stdout.strip())
+                logger.info(f"Scraped data: {data}")
+                return data
+            else:
+                logger.error(f"Scraping failed: {result.stderr}")
+                return {}
+
+        except Exception as e:
+            logger.error(f"Error scraping data: {e}")
+            return {}
 
 
 async def main():

@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aster AI - Master Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        
+        .service-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .service-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .service-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .service-icon {
+            font-size: 2rem;
+            margin-right: 15px;
+        }
+        
+        .service-title {
+            font-size: 1.4rem;
+            font-weight: bold;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-healthy { background-color: #4CAF50; }
+        .status-warning { background-color: #FF9800; }
+        .status-error { background-color: #F44336; }
+        .status-unknown { background-color: #9E9E9E; }
+        
+        .service-url {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            word-break: break-all;
+        }
+        
+        .service-description {
+            margin: 10px 0;
+            opacity: 0.9;
+            line-height: 1.5;
+        }
+        
+        .service-actions {
+            margin-top: 15px;
+        }
+        
+        .btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px 5px 5px 0;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+        
+        .btn-primary {
+            background: #4CAF50;
+            border-color: #4CAF50;
+        }
+        
+        .btn-secondary {
+            background: #FF9800;
+            border-color: #FF9800;
+        }
+        
+        .metrics-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .metric {
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .metric-label {
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            opacity: 0.8;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .refresh-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .refresh-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Aster AI Master Dashboard</h1>
+            <p>Complete System Overview & Service Status</p>
+        </div>
+        
+        <button class="refresh-btn" onclick="refreshAllServices()">🔄 Refresh All</button>
+        
+        <div class="metrics-section">
+            <h2 style="margin-bottom: 20px;">📊 System Overview</h2>
+            <div class="metrics-grid">
+                <div class="metric">
+                    <div class="metric-value" id="total-services">7</div>
+                    <div class="metric-label">Total Services</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="healthy-services">0</div>
+                    <div class="metric-label">Healthy Services</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="uptime">24h</div>
+                    <div class="metric-label">System Uptime</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="last-update">--:--</div>
+                    <div class="metric-label">Last Update</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="services-grid" id="services-grid">
+            <!-- Services will be loaded here -->
+        </div>
+        
+        <div class="footer">
+            <p><strong>Aster AI Trading System</strong> - Complete AI-powered trading infrastructure</p>
+            <p>Last updated: <span id="last-updated">Loading...</span></p>
+        </div>
+    </div>
+
+    <script>
+        const services = [
+            {
+                name: "Trading Bot",
+                icon: "🤖",
+                url: "https://aster-trading-agent-880429861698.us-central1.run.app",
+                description: "Autonomous AI trading agent with live market analysis and execution",
+                healthEndpoint: "/health",
+                statusEndpoint: "/status"
+            },
+            {
+                name: "Next.js Dashboard",
+                icon: "📊",
+                url: "https://aster-next-dashboard-880429861698.us-central1.run.app",
+                description: "Modern React dashboard for market data visualization and trading insights",
+                healthEndpoint: "/",
+                statusEndpoint: null
+            },
+            {
+                name: "GraphQL Gateway",
+                icon: "🔗",
+                url: "https://aster-graphql-gateway-880429861698.us-central1.run.app",
+                description: "GraphQL API gateway for data aggregation and real-time market feeds",
+                healthEndpoint: "/graphql",
+                statusEndpoint: null
+            },
+            {
+                name: "Trading Dashboard",
+                icon: "📈",
+                url: "https://aster-trading-dashboard-880429861698.us-central1.run.app",
+                description: "Legacy trading dashboard with performance metrics and controls",
+                healthEndpoint: "/",
+                statusEndpoint: null
+            },
+            {
+                name: "Rari Trade Dashboard",
+                icon: "💰",
+                url: "https://rari-trade-dashboard-880429861698.us-central1.run.app",
+                description: "Specialized dashboard for Rari Capital trading strategies",
+                healthEndpoint: "/",
+                statusEndpoint: null
+            },
+            {
+                name: "Aster Dashboard",
+                icon: "⭐",
+                url: "https://aster-dashboard-880429861698.us-central1.run.app",
+                description: "Core Aster DEX integration dashboard with market data",
+                healthEndpoint: "/",
+                statusEndpoint: null
+            },
+            {
+                name: "Quant AI Trader",
+                icon: "🧠",
+                url: "https://quant-ai-trader-880429861698.us-central1.run.app",
+                description: "Quantitative AI trading system with advanced algorithms",
+                healthEndpoint: "/",
+                statusEndpoint: null
+            }
+        ];
+        
+        async function checkServiceHealth(service) {
+            try {
+                const response = await fetch(`${service.url}${service.healthEndpoint}`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    headers: {
+                        'Accept': 'application/json, text/html, */*'
+                    }
+                });
+                
+                if (response.ok) {
+                    return { status: 'healthy', data: await response.text() };
+                } else {
+                    return { status: 'warning', data: `HTTP ${response.status}` };
+                }
+            } catch (error) {
+                return { status: 'error', data: error.message };
+            }
+        }
+        
+        async function updateServiceCard(service, health) {
+            const card = document.getElementById(`service-${service.name.replace(/\s+/g, '-').toLowerCase()}`);
+            if (!card) return;
+            
+            const statusIndicator = card.querySelector('.status-indicator');
+            const statusText = card.querySelector('.status-text');
+            
+            statusIndicator.className = `status-indicator status-${health.status}`;
+            
+            switch (health.status) {
+                case 'healthy':
+                    statusText.textContent = 'Healthy';
+                    break;
+                case 'warning':
+                    statusText.textContent = 'Warning';
+                    break;
+                case 'error':
+                    statusText.textContent = 'Error';
+                    break;
+                default:
+                    statusText.textContent = 'Unknown';
+            }
+        }
+        
+        async function loadServices() {
+            const servicesGrid = document.getElementById('services-grid');
+            let healthyCount = 0;
+            
+            for (const service of services) {
+                const health = await checkServiceHealth(service);
+                if (health.status === 'healthy') healthyCount++;
+                
+                const serviceId = service.name.replace(/\s+/g, '-').toLowerCase();
+                
+                const card = document.createElement('div');
+                card.className = 'service-card';
+                card.id = `service-${serviceId}`;
+                
+                card.innerHTML = `
+                    <div class="service-header">
+                        <div class="service-icon">${service.icon}</div>
+                        <div>
+                            <div class="service-title">${service.name}</div>
+                            <div>
+                                <span class="status-indicator status-${health.status}"></span>
+                                <span class="status-text">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="service-description">${service.description}</div>
+                    <div class="service-url">${service.url}</div>
+                    <div class="service-actions">
+                        <a href="${service.url}" target="_blank" class="btn btn-primary">Open</a>
+                        <button class="btn" onclick="checkService('${serviceId}')">Check</button>
+                    </div>
+                `;
+                
+                servicesGrid.appendChild(card);
+                await updateServiceCard(service, health);
+            }
+            
+            document.getElementById('healthy-services').textContent = healthyCount;
+            document.getElementById('last-updated').textContent = new Date().toLocaleTimeString();
+        }
+        
+        async function checkService(serviceId) {
+            const service = services.find(s => s.name.replace(/\s+/g, '-').toLowerCase() === serviceId);
+            if (!service) return;
+            
+            const health = await checkServiceHealth(service);
+            await updateServiceCard(service, health);
+        }
+        
+        async function refreshAllServices() {
+            const refreshBtn = document.querySelector('.refresh-btn');
+            refreshBtn.innerHTML = '<div class="loading"></div> Refreshing...';
+            
+            let healthyCount = 0;
+            for (const service of services) {
+                const health = await checkServiceHealth(service);
+                if (health.status === 'healthy') healthyCount++;
+                await updateServiceCard(service, health);
+            }
+            
+            document.getElementById('healthy-services').textContent = healthyCount;
+            document.getElementById('last-updated').textContent = new Date().toLocaleString();
+            
+            refreshBtn.innerHTML = '🔄 Refresh All';
+        }
+        
+        // Auto-refresh every 30 seconds
+        setInterval(refreshAllServices, 30000);
+        
+        // Initial load
+        loadServices();
+    </script>
+</body>
+</html>
