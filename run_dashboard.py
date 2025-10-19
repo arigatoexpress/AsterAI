@@ -1,50 +1,34 @@
 #!/usr/bin/env python3
 """
-Rari Trade AI Launcher
-======================
-
-This script ensures the correct environment is set up before launching
-the Rari Trade AI dashboard.
+Script to run the trading dashboard locally.
 """
 
+import subprocess
 import sys
 import os
 
-def main():
-    # Ensure the project root is in the Python path
-    project_root = os.path.dirname(os.path.abspath(__file__))
-    if project_root not in sys.path:
-        sys.path.insert(0, project_root)
+def install_requirements():
+    """Install required packages."""
+    print("Installing dashboard requirements...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", "dashboard_requirements.txt"])
 
-    # Set environment variables for Streamlit
-    os.environ['STREAMLIT_SERVER_HEADLESS'] = 'true'
-    os.environ['STREAMLIT_SERVER_PORT'] = '8501'
+def run_dashboard():
+    """Run the Streamlit dashboard."""
+    print("Starting trading dashboard...")
+    print("Dashboard will be available at: http://localhost:8501")
+    print("Press Ctrl+C to stop the dashboard")
+    
+    subprocess.run([
+        sys.executable, "-m", "streamlit", "run", "trading_dashboard.py",
+        "--server.port", "8501",
+        "--server.address", "localhost"
+    ])
 
-    # Import and run streamlit
-    import subprocess
-
-    cmd = [
-        sys.executable, '-m', 'streamlit', 'run',
-        os.path.join(project_root, 'dashboard', 'app.py'),
-        '--server.headless', 'true',
-        '--server.port', '8501'
-    ]
-
-    print("🚀 Launching Rari Trade AI Dashboard...")
-    print(f"📁 Project root: {project_root}")
-    print(f"🐍 Python path: {sys.path[:3]}...")
-    print(f"🌐 Dashboard will be available at: http://localhost:8501")
-    print()
-
+if __name__ == "__main__":
     try:
-        subprocess.run(cmd, cwd=project_root)
+        install_requirements()
+        run_dashboard()
     except KeyboardInterrupt:
-        print("\n👋 Rari Trade AI Dashboard stopped.")
+        print("\nDashboard stopped.")
     except Exception as e:
-        print(f"❌ Error launching dashboard: {e}")
-        return 1
-
-    return 0
-
-if __name__ == '__main__':
-    exit(main())
+        print(f"Error: {e}")

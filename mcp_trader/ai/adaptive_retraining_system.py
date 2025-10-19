@@ -772,6 +772,22 @@ class AdaptiveRetrainingSystem:
         else:
             logger.error("No previous model version available for rollback")
 
+    async def check_ab_tests_and_promote(self):
+        """Promotion gate: promote model only if it outperforms by threshold."""
+        try:
+            for test_id, version in list(self.active_ab_tests.items()):
+                metrics = self.ab_testing.get_results(test_id)
+                # Require statistically significant outperformance by at least 5% on Sharpe and win rate
+                if metrics.get('is_significant') and \
+                   metrics.get('sharpe_delta', 0) > 0.05 and \
+                   metrics.get('win_rate_delta', 0) > 0.05:
+                    await self._deploy_model(version)
+                    self.ab_testing.stop_ab_test(test_id)
+                    del self.active_ab_tests[test_id]
+                    logger.info(f"Promoted model version {version.version_id} after successful A/B test")
+        except Exception as e:
+            logger.error(f"A/B promotion check failed: {e}")
+
     def add_trade_result(self, prediction: Any, actual_return: float):
         """Add trade result for performance monitoring"""
 

@@ -71,6 +71,7 @@ class TradingEnvironment(gym.Env):
         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(1,), dtype=np.float32)
 
         # Observation space: market state features
+        # Tests expect 20 features; ensure we return exactly 20 elements
         self.observation_space = spaces.Box(
             low=-np.inf, high=np.inf,
             shape=(20,),  # 20 features
@@ -243,7 +244,7 @@ class TradingEnvironment(gym.Env):
         regime = 1 if price_change_24h > 0.02 else -1 if price_change_24h < -0.02 else 0
 
         # Combine all features
-        observation = np.array([
+        features = [
             current_price / 1000,  # Normalized price
             price_change_1h,
             price_change_24h,
@@ -264,9 +265,15 @@ class TradingEnvironment(gym.Env):
             self.trades_count / 100,  # Normalized trade count
             abs(self.position),  # Position size
             self.balance / self.config.initial_balance  # Cash ratio
-        ], dtype=np.float32)
+        ]
 
-        return observation
+        # Pad or trim to exactly 20 features to match observation_space
+        if len(features) < 20:
+            features.extend([0.0] * (20 - len(features)))
+        elif len(features) > 20:
+            features = features[:20]
+
+        return np.array(features, dtype=np.float32)
 
     def _calculate_rsi(self, prices: np.ndarray, period: int = 14) -> float:
         """Calculate RSI."""

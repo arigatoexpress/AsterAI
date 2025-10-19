@@ -5,14 +5,13 @@ Advanced algorithmic trading with ensemble AI models and comprehensive risk mana
 
 __version__ = "2.0.0"
 
-from .config import get_settings
-from .execution.aster_client import AsterClient, AsterConfig
-from .trading.autonomous_trader import AutonomousTrader
+# Avoid heavy imports at package import time (e.g., torch on systems without GPU wheels).
+# Downstream modules should import the needed symbols directly from their submodules.
 
 __all__ = [
-    'get_settings',
-    'AsterConfig',
-    'AsterClient',
-    'AutonomousTrader'
+    'config',
+    'backtesting',
+    'trading',
+    'execution',
 ]
 

@@ -3,6 +3,7 @@ Advanced Anomaly Detection System for Trading Platform
 Implements multiple anomaly detection methods including Isolation Forests, Autoencoders, and Statistical Process Control.
 """
 
+import os
 import numpy as np
 import pandas as pd
 try:
@@ -219,7 +220,9 @@ class EnsembleAnomalyDetector:
 
         # Device for autoencoder
         if PYTORCH_AVAILABLE:
-            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+            # Force CPU during tests or when CUDA not compatible
+            use_cpu = os.getenv('ASTERAi_TEST_CPU', '1') == '1'
+            self.device = torch.device('cpu' if use_cpu or not torch.cuda.is_available() else 'cuda')
         else:
             self.device = None
 

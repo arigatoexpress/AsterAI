@@ -1,0 +1,29 @@
+studySpec:
+  metrics:
+    - metricId: roc_auc
+      goal: MAXIMIZE
+  parameters:
+    - parameterId: LEARNING_RATE
+      doubleValueSpec:
+        minValue: 0.01
+        maxValue: 0.3
+    - parameterId: MAX_DEPTH
+      integerValueSpec:
+        minValue: 3
+        maxValue: 10
+    - parameterId: N_ESTIMATORS
+      integerValueSpec:
+        minValue: 100
+        maxValue: 700
+  algorithm: ALGORITHM_UNSPECIFIED
+trialJobSpec:
+  workerPoolSpecs:
+    - machineSpec:
+        machineType: n1-standard-4
+      replicaCount: 1
+      containerSpec:
+        imageUri: REPLACE_WITH_IMAGE
+        args:
+          - --out=gs://REPLACE_WITH_BUCKET/models/aster-sample
+
+

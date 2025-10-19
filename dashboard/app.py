@@ -1693,7 +1693,10 @@ def show_strategy_lab():
 
     for config in test_configs:
         try:
-            pos = generate_positions_sma_crossover(pd.DataFrame({"close": close}), config["short"], config["long"])
+            pos = safe_get_positions(pd.DataFrame({"close": close}), config["short"], config["long"])  # guard missing import/attr
+            if pos is None:
+                strategy_errors.append(f"SMA crossover unavailable for {config['name']}")
+                continue
             res = evaluate_positions(close, pos, fee_bps=fee_bps)
             metrics = res["metrics"]
 
@@ -1714,7 +1717,12 @@ def show_strategy_lab():
     # Optimization suggestions
     st.markdown("### 🎯 Optimization Recommendations")
 
-    best_sharpe = max(strategies_data, key=lambda x: float(x["Sharpe"]))
+    # Guard empty or invalid results to avoid ValueError
+    valid_results = [s for s in strategies_data if "Sharpe" in s and str(s["Sharpe"]).strip() not in ("", "nan")]
+    if not valid_results:
+        st.info("No valid strategy results to optimize yet. Check data source and strategy function availability.")
+        return
+    best_sharpe = max(valid_results, key=lambda x: float(x["Sharpe"]))
     best_return = max(strategies_data, key=lambda x: float(x["Total Return"][:-1])/100)
 
     col1, col2 = st.columns(2)

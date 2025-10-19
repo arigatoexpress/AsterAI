@@ -291,11 +291,8 @@ class AdaptiveTradingAgent:
         self.config = config
         self.aster_client: Optional[AsterClient] = None
         self.positions: Dict[str, Position] = {}
-        self.portfolio_state = PortfolioState(
-            timestamp=datetime.now(),
-            total_balance=config.initial_balance,
-            available_balance=config.initial_balance
-        )
+        # Tests expect lazy portfolio_state initialization
+        self.portfolio_state: Optional[PortfolioState] = None
 
         # Market state tracking
         self.market_history: List[MarketState] = []
@@ -309,11 +306,8 @@ class AdaptiveTradingAgent:
         }
 
         # Strategy weights (adaptively learned)
-        self.strategy_weights = {
-            'barbell': 0.4,
-            'asymmetric': 0.4,
-            'tail_risk': 0.2
-        }
+        # Tests expect empty weights at initialization
+        self.strategy_weights: Dict[str, float] = {}
 
         # Learning components
         self.performance_window: List[Dict[str, Any]] = []

@@ -34,7 +34,7 @@ steps:
       - '--set-env-vars'
       - 'ENVIRONMENT=production,LOG_LEVEL=INFO'
       - '--set-secrets'
-      - 'ASTER_API_KEY=aster-api-key:latest,ASTER_API_SECRET=aster-api-secret:latest'
+      - 'ASTER_API_KEY=ASTER_API_KEY:latest,ASTER_API_SECRET=ASTER_SECRET_KEY:latest'
 
   # Deploy data collection service
   - name: 'gcr.io/cloud-builders/docker'
@@ -69,7 +69,7 @@ steps:
       - '--set-env-vars'
       - 'ENVIRONMENT=production,LOG_LEVEL=INFO'
       - '--set-secrets'
-      - 'ASTER_API_KEY=aster-api-key:latest,ASTER_API_SECRET=aster-api-secret:latest'
+      - 'ASTER_API_KEY=ASTER_API_KEY:latest,ASTER_API_SECRET=ASTER_SECRET_KEY:latest'
 
   # Deploy monitoring dashboard
   - name: 'gcr.io/cloud-builders/docker'
@@ -190,7 +190,6 @@ options:
 # Substitutions
 substitutions:
   _REGION: 'us-central1'
-  _SERVICE_ACCOUNT: 'aster-trading@$PROJECT_ID.iam.gserviceaccount.com'
 
 # Timeout
 timeout: '1200s'

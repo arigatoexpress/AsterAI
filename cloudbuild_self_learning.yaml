@@ -1,0 +1,48 @@
+# Cloud Build configuration for Self-Learning Trading Bot
+steps:
+  # Build and push Docker images
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/aster-self-learning-trader:$COMMIT_SHA', '-f', 'Dockerfile.self_learning', '.']
+    
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/aster-self-learning-trader:$COMMIT_SHA']
+  
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'aster-self-learning-trader'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/aster-self-learning-trader:$COMMIT_SHA'
+      - '--region'
+      - 'us-central1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--memory'
+      - '4Gi'
+      - '--cpu'
+      - '4'
+      - '--max-instances'
+      - '5'
+      - '--min-instances'
+      - '1'
+      - '--port'
+      - '8000'
+      - '--set-env-vars'
+      - 'ENVIRONMENT=production,LOG_LEVEL=INFO'
+      - '--set-secrets'
+      - 'ASTER_API_KEY=ASTER_API_KEY:latest,ASTER_API_SECRET=ASTER_SECRET_KEY:latest'
+      - '--timeout'
+      - '3600'
+      - '--concurrency'
+      - '1000'
+
+# Substitutions
+substitutions:
+  _REGION: 'us-central1'
+
+# Timeout
+timeout: '1200s'

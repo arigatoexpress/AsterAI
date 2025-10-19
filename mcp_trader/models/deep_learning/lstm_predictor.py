@@ -3,6 +3,7 @@ Advanced LSTM/RNN Price Prediction Models for Cryptocurrency Trading
 Implements multi-step forecasting with attention mechanisms and uncertainty estimation.
 """
 
+import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -208,7 +209,28 @@ class LSTMPredictorModel(BaseMLModel):
         if config:
             default_config.update(config)
 
-        self.config = LSTMConfig(**default_config)
+        # Filter keys not present in LSTMConfig to avoid TypeError from extra kwargs
+        allowed_keys = {
+            'input_size',
+            'hidden_size',
+            'num_layers',
+            'output_size',
+            'dropout',
+            'bidirectional',
+            'attention',
+            'forecast_horizon',
+            'sequence_length',
+            'learning_rate',
+            'batch_size',
+            'num_epochs',
+            'patience',
+        }
+        filtered = {k: v for k, v in default_config.items() if k in allowed_keys}
+        # Preserve non-config keys for model logic
+        self._target_column = default_config.get('target_column', 'close')
+        self._lookback_window = default_config.get('lookback_window', 168)
+
+        self.config = LSTMConfig(**filtered)
         self.model = LSTMPredictor(self.config)
         self.scaler = None
         self.feature_columns = []
@@ -220,8 +242,9 @@ class LSTMPredictorModel(BaseMLModel):
         self.best_loss = float('inf')
         self.patience_counter = 0
 
-        # GPU support
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        # Device selection (force CPU in tests if ASTERAi_TEST_CPU=1)
+        use_cpu = os.getenv('ASTERAi_TEST_CPU', '0') == '1'
+        self.device = torch.device('cpu' if use_cpu or not torch.cuda.is_available() else 'cuda')
         self.model.to(self.device)
 
     def prepare_features(self, data: pd.DataFrame) -> np.ndarray:

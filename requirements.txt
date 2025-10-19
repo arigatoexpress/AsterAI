@@ -41,7 +41,9 @@ torchaudio>=2.0.0
 transformers>=4.30.0
 stable-baselines3>=2.0.0
 gymnasium>=0.29.0
-ray[rllib]>=2.6.0
+# ray is optional; Windows/Python 3.13 wheels may be unavailable.
+# Install manually if needed: pip install -U ray==2.9.3
+# ray[rllib]>=2.6.0
 
 # Traditional ML
 scikit-learn>=1.3.0

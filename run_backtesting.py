@@ -17,8 +17,12 @@ import numpy as np
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Tuple
-import matplotlib.pyplot as plt
-import seaborn as sns
+try:
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    _viz_available = True
+except Exception:
+    _viz_available = False
 import sys
 
 # Add project root to path
@@ -148,13 +152,22 @@ class BacktestingManager:
             # Print top 5 strategies for this symbol
             valid_results = {k: v for k, v in symbol_results.items() if v is not None}
             if valid_results:
-                top_5 = sorted(valid_results.items(),
-                             key=lambda x: x[1].sharpe_ratio,
-                             reverse=True)[:5]
+                top_5 = sorted(
+                    valid_results.items(),
+                    key=lambda x: x[1].sharpe_ratio,
+                    reverse=True
+                )[:5]
 
                 print(f"\n🏆 TOP 5 STRATEGIES FOR {symbol}:")
                 for i, (strategy_name, result) in enumerate(top_5, 1):
-                    print(".1f"
+                    print(
+                        f"   {i}. {strategy_name}: "
+                        f"Sharpe={result.sharpe_ratio:.2f}, "
+                        f"Return={result.total_return:.1%}, "
+                        f"WinRate={result.win_rate:.1%}, "
+                        f"MaxDD={result.max_drawdown:.1%}, "
+                        f"Trades={result.total_trades}"
+                    )
         return results
 
     async def find_optimal_parameters(self, strategy_class, symbol: str,
@@ -470,8 +483,9 @@ async def main():
                     else:
                         print("   ⚠️  STATUS: NEED BETTER STRATEGIES")
 
-        print("
-📊 Backtesting completed!"        print("📈 Check results/backtesting/backtesting_report.html for detailed analysis"        print("🤖 Next: Train AI models with the best strategies"
+        print("\n📊 Backtesting completed!")
+        print("📈 Check results/backtesting/backtesting_report.html for detailed analysis")
+        print("🤖 Next: Train AI models with the best strategies")
     except Exception as e:
         logger.error(f"Backtesting failed: {e}")
         print(f"\n❌ Backtesting failed: {e}")

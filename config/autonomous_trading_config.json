@@ -1,54 +1,103 @@
 {
   "initial_capital": 100,
-  "max_leverage": 3,
-  "position_size_pct": 0.02,
+  "max_leverage": 5,
+  "position_size_pct": 0.03,
   "stop_loss_pct": 0.02,
-  "take_profit_pct": 0.04,
-  "daily_loss_limit_pct": 0.10,
-  "max_positions": 3,
-  "trading_pairs": ["BTCUSDT", "ETHUSDT"],
+  "take_profit_pct": 0.07,
+  "daily_loss_limit_pct": 0.05,
+  "max_positions": 5,
+  "trading_pairs": ["BTCUSDT", "ETHUSDT", "ADAUSDT", "SOLUSDT", "AVAXUSDT"],
   "data_collection_interval": 300,
   "retraining_frequency": "weekly",
   "optimization_frequency": "daily",
+  "market_regime_detection": {
+    "enabled": true,
+    "lookback_days": 30,
+    "recovery_aggression_multiplier": 2.0,
+    "oversold_threshold": 0.7,
+    "recovery_potential_threshold": 0.6
+  },
   "risk_management": {
-    "max_drawdown_pct": 0.15,
-    "correlation_limit": 0.7,
+    "max_drawdown_pct": 0.12,
+    "correlation_limit": 0.6,
     "volatility_adjustment": true,
-    "kelly_criterion": true
+    "kelly_criterion": true,
+    "regime_based_sizing": true,
+    "recovery_phase_boost": true
+  },
+  "hybrid_pullback_profile": {
+    "enabled": true,
+    "grid_allocation": 0.6,
+    "volatility_allocation": 0.4,
+    "grid": {
+      "grid_levels": 7,
+      "grid_spacing_percent": 2.0,
+      "position_size_per_level_pct": 0.015
+    },
+    "volatility": {
+      "min_volatility_threshold": 3.0,
+      "profit_taking_threshold": 0.07,
+      "stop_loss_threshold": 0.02
+    },
+    "risk": {
+      "max_portfolio_risk": 0.05,
+      "max_single_position_risk": 0.01,
+      "max_daily_loss": 0.05
+    }
   },
   "strategies": {
     "market_making": {
       "enabled": true,
-      "weight": 0.3,
-      "spread_multiplier": 1.5,
-      "inventory_skew_threshold": 0.3,
-      "max_position_size": 0.05
+      "weight": 0.25,
+      "spread_multiplier": 1.2,
+      "inventory_skew_threshold": 0.4,
+      "max_position_size": 0.08
     },
     "funding_arbitrage": {
       "enabled": true,
-      "weight": 0.4,
-      "funding_rate_threshold": 0.001,
-      "position_size": 0.03,
-      "max_leverage": 2.0
+      "weight": 0.30,
+      "funding_rate_threshold": 0.0008,
+      "position_size": 0.05,
+      "max_leverage": 3.0
     },
     "dmark": {
       "enabled": true,
-      "weight": 0.3,
-      "dmark_threshold": 0.6,
-      "stop_loss_pct": 0.02,
-      "take_profit_pct": 0.06
+      "weight": 0.25,
+      "dmark_threshold": 0.5,
+      "stop_loss_pct": 0.025,
+      "take_profit_pct": 0.08
+    },
+    "degen_trading": {
+      "enabled": true,
+      "weight": 0.20,
+      "sentiment_threshold": 0.6,
+      "momentum_threshold": 0.7,
+      "max_position_size": 0.06
     }
+  },
+  "mev_protection": {
+    "enabled": true,
+    "max_slippage_pct": 0.15,
+    "min_liquidity_threshold": 5000,
+    "max_price_impact_pct": 0.08,
+    "private_mempool_enabled": true,
+    "random_delay_range": [0.1, 0.8],
+    "threat_detection_sensitivity": "high"
   },
   "data_sources": {
     "primary": "aster_dex",
     "backup": "binance",
-    "fallback": "coingecko"
+    "fallback": "coingecko",
+    "sentiment": "twitter",
+    "social": "reddit"
   },
   "monitoring": {
-    "dashboard_refresh_interval": 5,
+    "dashboard_refresh_interval": 3,
     "alert_email": "your-email@example.com",
     "alert_webhook": "https://hooks.slack.com/your-webhook-url",
-    "log_level": "INFO"
+    "log_level": "INFO",
+    "regime_alerts": true,
+    "mev_alerts": true
   },
   "cloud": {
     "project_id": "your-project-id",
@@ -64,6 +113,9 @@
     "binance": {
       "api_key": "your-binance-api-key",
       "api_secret": "your-binance-api-secret"
+    },
+    "twitter": {
+      "bearer_token": "your-twitter-bearer-token"
     }
   },
   "database": {
@@ -72,14 +124,29 @@
       "market_data": "market_data",
       "features": "features",
       "trades": "trades",
-      "performance": "performance"
+      "performance": "performance",
+      "regime_history": "regime_history",
+      "mev_events": "mev_events"
     }
   },
   "safety": {
     "emergency_stop_enabled": true,
-    "max_daily_trades": 50,
-    "max_hourly_trades": 10,
+    "max_daily_trades": 60,
+    "max_hourly_trades": 15,
     "circuit_breaker_loss_pct": 0.05,
-    "position_timeout_hours": 24
+    "position_timeout_hours": 48,
+    "regime_change_protection": true,
+    "mev_threat_cancellation": true
+  },
+  "recovery_phase_settings": {
+    "enabled": true,
+    "position_size_multiplier": 2.5,
+    "max_positions_increase": 2,
+    "stop_loss_relaxation": 1.5,
+    "take_profit_aggression": 1.8,
+    "strategy_weight_shift": {
+      "momentum_strategies": 1.5,
+      "defensive_strategies": 0.7
+    }
   }
 }
