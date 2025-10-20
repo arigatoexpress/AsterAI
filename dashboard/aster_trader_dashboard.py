@@ -217,11 +217,11 @@ async def get_market_data():
                 symbol_data['ticker_error'] = str(e)
 
             try:
-                    # Get order book
-                    orderbook = await dashboard_state['client'].get_order_book(symbol, 10)
-                    symbol_data['orderbook'] = orderbook
-                except Exception as e:
-                    symbol_data['orderbook_error'] = str(e)
+                # Get order book
+                orderbook = await dashboard_state['client'].get_order_book(symbol, 10)
+                symbol_data['orderbook'] = orderbook
+            except Exception as e:
+                symbol_data['orderbook_error'] = str(e)
 
                 data[symbol] = symbol_data
 

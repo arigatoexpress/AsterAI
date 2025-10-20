@@ -15,6 +15,7 @@ from typing import Dict, Any
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -22,6 +23,17 @@ logger = logging.getLogger(__name__)
 
 # Initialize FastAPI app
 app = FastAPI(title="Aster Trading Agent", version="1.0.0")
+
+# CORS for frontend
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "*")
+origins = [o.strip() for o in allowed_origins.split(",") if o.strip()]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins if origins else ["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Global state
 trading_agent = None

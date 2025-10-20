@@ -1,0 +1,32 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [ 'build', '-t', '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/python-gql-proxy:latest', '.' ]
+    dir: 'services/python-gql-proxy'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [ 'push', '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/python-gql-proxy:latest' ]
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - python-gql-proxy
+      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/python-gql-proxy:latest
+      - --region=${_REGION}
+      - --platform=managed
+      - --allow-unauthenticated
+      - --cpu=1
+      - --memory=256Mi
+      - --concurrency=80
+      - --min-instances=1
+      - --max-instances=10
+
+substitutions:
+  _REGION: us-central1
+  _REPO: aster
+
+images:
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/python-gql-proxy:latest'
+
+

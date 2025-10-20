@@ -21,8 +21,9 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
 from .input_validation import InputValidator
+from ..logging_utils import get_logger
 
-logger = logging.get_logger(__name__)
+logger = get_logger(__name__)
 
 
 class SecurityMiddleware(BaseHTTPMiddleware):

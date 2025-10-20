@@ -1,0 +1,65 @@
+steps:
+  # Build the dashboard container
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/aster-dashboard:latest'
+      - '-f'
+      - 'Dockerfile.dashboard'
+      - '.'
+
+  # Push the container to GCR
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/aster-dashboard:latest'
+
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'aster-dashboard'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/aster-dashboard:latest'
+      - '--region'
+      - 'us-central1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--memory'
+      - '2Gi'
+      - '--cpu'
+      - '2'
+      - '--max-instances'
+      - '10'
+      - '--min-instances'
+      - '1'
+      - '--port'
+      - '8080'
+      - '--set-env-vars'
+      - 'ENVIRONMENT=production,LOG_LEVEL=INFO'
+      - '--timeout'
+      - '1800'
+
+# Store build artifacts
+artifacts:
+  objects:
+    location: 'gs://$_BUCKET_NAME/dashboard-builds/'
+    paths:
+      - 'local/requirements.txt'
+      - 'local/requirements-gpu.txt'
+      - 'advanced_dashboard_server.py'
+
+# Build timeout
+timeout: '1800s'
+
+# Machine type for build
+options:
+  machineType: 'E2_HIGHCPU_8'
+
+# Environment variables
+substitutions:
+  _BUCKET_NAME: 'aster-ai-dashboard-builds'

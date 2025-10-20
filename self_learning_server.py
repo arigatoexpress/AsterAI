@@ -12,9 +12,16 @@ from datetime import datetime
 from typing import Dict, Any, List
 
 import uvicorn
-from fastapi import FastAPI, HTTPException, BackgroundTasks
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
+from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
+from collections import deque
+import json
 from pydantic import BaseModel
+
+# Set up logging early
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 try:
     from self_learning_trader import SelfLearningTrader, TradingConfig
@@ -27,17 +34,29 @@ except ImportError as e:
     from live_trading_agent import LiveTradingAgent, TradingConfig as BasicTradingConfig
     logger.info("Using fallback basic trading agent")
 
-# Set up logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
 # Initialize FastAPI app
 app = FastAPI(title="Self-Learning Trading Bot", version="2.0.0")
+
+# CORS (allow frontend and dashboards)
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "*")
+origins = [o.strip() for o in allowed_origins.split(",") if o.strip()]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins if origins else ["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Global state
 trading_bot = None
 is_running = False
 performance_data = []
+
+# In-memory ring buffers for live metrics/market snapshots
+metrics_buffer: deque = deque(maxlen=500)
+market_buffer: deque = deque(maxlen=500)
+positions_buffer: deque = deque(maxlen=500)
 
 class TradeRequest(BaseModel):
     symbol: str
@@ -128,6 +147,73 @@ async def get_market_data():
         return {}
     
     return trading_bot.market_data
+
+@app.get("/metrics")
+async def get_metrics():
+    """Return recent performance metrics and latest snapshot."""
+    latest = metrics_buffer[-1] if metrics_buffer else None
+    return {
+        "latest": latest,
+        "samples": list(metrics_buffer)[-50:],
+        "count": len(metrics_buffer)
+    }
+
+@app.get("/orders")
+async def get_orders():
+    if not trading_bot:
+        return []
+    orders = getattr(trading_bot, "open_orders", [])
+    return orders
+
+@app.get("/portfolio")
+async def get_portfolio():
+    if not trading_bot:
+        return {"balance": 0.0, "equity": 0.0, "margin_used": 0.0}
+    equity = trading_bot.balance
+    margin_used = 0.0
+    return {"balance": trading_bot.balance, "equity": equity, "margin_used": margin_used}
+
+@app.get("/signals")
+async def get_signals():
+    if not trading_bot:
+        return []
+    signals = getattr(trading_bot, "last_signals", [])
+    return signals
+
+@app.get("/system/summary")
+async def system_summary():
+    """Aggregate simple system status. Extendable to external services."""
+    return {
+        "service": "self-learning-trading-bot",
+        "running": is_running,
+        "timestamp": datetime.now().isoformat(),
+        "buffers": {
+            "metrics": len(metrics_buffer),
+            "market": len(market_buffer),
+            "positions": len(positions_buffer)
+        }
+    }
+
+@app.get("/stream")
+async def stream(request: Request):
+    """Server-Sent Events stream with periodic metric updates."""
+    async def event_generator():
+        last_len = 0
+        while True:
+            if await request.is_disconnected():
+                break
+            if len(metrics_buffer) != last_len:
+                last_len = len(metrics_buffer)
+                data = {
+                    "metrics": metrics_buffer[-1] if metrics_buffer else None,
+                    "market": market_buffer[-1] if market_buffer else None,
+                    "positions": positions_buffer[-1] if positions_buffer else None,
+                    "ts": datetime.now().isoformat(),
+                }
+                yield f"data: {json.dumps(data)}\n\n"
+            await asyncio.sleep(1.0)
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 @app.get("/strategy-weights")
 async def get_strategy_weights():
@@ -243,6 +329,8 @@ async def start_trading():
             
             # Start trading in background
             asyncio.create_task(trading_bot.start_trading())
+            # Start buffer updater
+            asyncio.create_task(_update_buffers_loop())
             is_running = True
             
             logger.info("Self-learning trading bot started successfully")
@@ -273,6 +361,7 @@ async def start_trading():
             
             # Start trading in background
             asyncio.create_task(trading_bot.start_trading())
+            asyncio.create_task(_update_buffers_loop())
             is_running = True
             
             logger.info("Fallback trading agent started successfully")
@@ -288,6 +377,41 @@ async def start_trading():
     except Exception as e:
         logger.error(f"Failed to start trading bot: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to start trading bot: {str(e)}")
+
+async def _update_buffers_loop():
+    """Periodically snapshot metrics/market/positions into ring buffers."""
+    while True:
+        try:
+            if trading_bot:
+                # Metrics snapshot
+                metrics = {
+                    "total_trades": trading_bot.performance_metrics.get("total_trades", 0),
+                    "winning_trades": trading_bot.performance_metrics.get("winning_trades", 0),
+                    "losing_trades": trading_bot.performance_metrics.get("losing_trades", 0),
+                    "total_pnl": trading_bot.performance_metrics.get("total_pnl", 0.0),
+                    "win_rate": trading_bot.performance_metrics.get("win_rate", 0.0),
+                    "balance": getattr(trading_bot, "balance", 0.0),
+                    "active_positions": len(getattr(trading_bot, "positions", {})),
+                }
+                metrics_buffer.append(metrics)
+
+                # Market snapshot (light)
+                md = getattr(trading_bot, "market_data", {})
+                market_buffer.append({k: v for k, v in list(md.items())[:10]})
+
+                # Positions snapshot
+                pos = []
+                for _, p in getattr(trading_bot, "positions", {}).items():
+                    pos.append({
+                        "symbol": p.symbol,
+                        "side": p.side,
+                        "qty": p.quantity,
+                        "entry": p.entry_price,
+                    })
+                positions_buffer.append(pos)
+        except Exception as e:
+            logger.warning(f"Buffer update error: {e}")
+        await asyncio.sleep(1.0)
 
 @app.post("/stop")
 async def stop_trading():

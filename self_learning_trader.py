@@ -109,8 +109,26 @@ class SelfLearningTrader:
             'features': StandardScaler(),
             'targets': StandardScaler()
         }
-        
+
+        # Initialize scalers with dummy data to prevent "not fitted" errors
+        self._initialize_scalers()
+
         self.memory_buffer = []
+
+    def _initialize_scalers(self):
+        """Initialize scalers with dummy data to prevent 'not fitted' errors."""
+        try:
+            # Create dummy data for initialization
+            dummy_features = np.random.randn(10, 15)  # 10 samples, 15 features
+            dummy_targets = np.random.randn(10, 3)     # 10 samples, 3 targets
+
+            # Fit scalers with dummy data
+            self.scalers['features'].fit(dummy_features)
+            self.scalers['targets'].fit(dummy_targets)
+
+            logger.info("Scalers initialized with dummy data")
+        except Exception as e:
+            logger.warning(f"Could not initialize scalers: {e}")
         self.last_model_update = 0
         
         # Market data

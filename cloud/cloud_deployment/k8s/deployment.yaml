@@ -1,0 +1,189 @@
+# Multi-Agent HFT Trading Deployment on GKE
+# Deploys multiple specialized trading agents with GPU acceleration
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hft-trading-agents
+  labels:
+    app: hft-trading-agents
+spec:
+  # Deploy 3 agents by default - can be scaled up/down
+  replicas: 3
+  selector:
+    matchLabels:
+      app: hft-trading-agents
+  template:
+    metadata:
+      labels:
+        app: hft-trading-agents
+    spec:
+      # Use GPU-enabled node pool
+      nodeSelector:
+        cloud.google.com/gke-nodepool: gpu-node-pool
+      tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+        effect: NoSchedule
+
+      containers:
+      - name: hft-agent
+        # Image will be built by Cloud Build pipeline
+        image: ${REGION}-docker.pkg.dev/${PROJECT_ID}/hft-images/hft-aster-trader:latest
+        imagePullPolicy: Always
+
+        # GPU resources
+        resources:
+          requests:
+            nvidia.com/gpu: 1  # Request 1 GPU
+            cpu: "2"
+            memory: "8Gi"
+          limits:
+            nvidia.com/gpu: 1  # Limit to 1 GPU
+            cpu: "4"
+            memory: "16Gi"
+
+        # Environment variables - Agent specialization via pod index
+        env:
+        - name: POD_INDEX
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: GCP_PROJECT_ID
+          value: "${PROJECT_ID}"
+        - name: ASTER_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: api-keys
+              key: aster-api-key
+        - name: ASTER_API_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: api-keys
+              key: aster-api-secret
+        - name: INITIAL_CAPITAL
+          value: "50"  # Start with $50 per agent
+        - name: GPU_ACCELERATION
+          value: "true"
+        - name: TENSORRT_OPTIMIZATION
+          value: "true"
+        - name: MAX_LATENCY_MS
+          value: "10"
+        - name: LOG_LEVEL
+          value: "INFO"
+        # Agent specialization based on pod index
+        - name: AGENT_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: AGENT_STRATEGY
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name  # Will be used to determine strategy
+        - name: AGENT_CONFIG
+          value: |
+            {
+              "specialization": {
+                "hft-trading-agents-0": {
+                  "strategy": "market_making",
+                  "symbol": "BTC/USD",
+                  "risk_multiplier": 1.0
+                },
+                "hft-trading-agents-1": {
+                  "strategy": "funding_arbitrage",
+                  "symbol": "ETH/USD",
+                  "risk_multiplier": 1.2
+                },
+                "hft-trading-agents-2": {
+                  "strategy": "market_making,funding_arbitrage",
+                  "symbol": "SOL/USD",
+                  "risk_multiplier": 0.8
+                },
+                "default": {
+                  "strategy": "market_making",
+                  "symbol": "BTC/USD",
+                  "risk_multiplier": 1.0
+                }
+              }
+            }
+
+        # Ports
+        ports:
+        - containerPort: 8080
+          name: api
+        - containerPort: 9090
+          name: metrics
+
+        # Health checks
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        # Volume mounts for model storage
+        volumeMounts:
+        - name: model-storage
+          mountPath: /models
+        - name: shared-memory
+          mountPath: /dev/shm
+
+      # Init container to download models from Vertex AI
+      initContainers:
+      - name: model-downloader
+        image: google/cloud-sdk:latest
+        command:
+        - /bin/bash
+        - -c
+        - |
+          # Download latest model from Vertex AI Model Registry
+          MODEL_VERSION=$(gcloud ai models list --region=${REGION} --filter="display_name:hft_cnn_predictor" --format="value(name)" | head -1)
+          if [ -n "$MODEL_VERSION" ]; then
+            gcloud ai models export $MODEL_VERSION --destination=/models --region=${REGION}
+          else
+            echo "No model found in registry, using default"
+          fi
+
+          # Download TensorRT engine if available
+          ENGINE_VERSION=$(gcloud ai models list --region=${REGION} --filter="display_name:hft_cnn_tensorrt" --format="value(name)" | head -1)
+          if [ -n "$ENGINE_VERSION" ]; then
+            gcloud ai models export $ENGINE_VERSION --destination=/models/engine --region=${REGION}
+          fi
+
+        volumeMounts:
+        - name: model-storage
+          mountPath: /models
+
+      # Volumes
+      volumes:
+      - name: model-storage
+        emptyDir: {}
+      - name: shared-memory
+        emptyDir:
+          medium: Memory
+          sizeLimit: 2Gi
+
+      # Service account for Vertex AI access
+      serviceAccountName: hft-trader-sa
+
+      # Security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+
+      # Pod disruption budget
+      disruptionBudget:
+        minAvailable: 2  # Keep at least 2 agents running during updates

@@ -1,47 +1,98 @@
 #!/usr/bin/env python3
 """
-Simple HTTP server to serve the trading dashboard.
+AsterAI Advanced RTX Trading Dashboard Server
+
+Launches the advanced dashboard with real-time GPU data, live experiments,
+and interactive trading controls.
 """
 
-import http.server
-import socketserver
 import os
-import webbrowser
-from threading import Timer
+import sys
+import subprocess
+import time
 
-PORT = 8081
+def check_dependencies():
+    """Check if required dependencies are installed."""
+    required_packages = [
+        'flask', 'flask-socketio', 'psutil', 'plotly'
+    ]
 
-class DashboardHandler(http.server.SimpleHTTPRequestHandler):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=os.path.dirname(os.path.abspath(__file__)), **kwargs)
-    
-    def end_headers(self):
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
-        super().end_headers()
+    missing_packages = []
+    for package in required_packages:
+        try:
+            __import__(package.replace('-', '_'))
+        except ImportError:
+            missing_packages.append(package)
 
-def open_browser():
-    """Open the dashboard in the default browser."""
-    webbrowser.open(f'http://localhost:{PORT}')
+    if missing_packages:
+        print(f"⚠️  Missing required packages: {', '.join(missing_packages)}")
+        print("Installing missing packages...")
+        try:
+            subprocess.check_call([sys.executable, '-m', 'pip', 'install'] + missing_packages)
+            print("✅ All dependencies installed successfully!")
+        except subprocess.CalledProcessError:
+            print("❌ Failed to install dependencies. Please install manually:")
+            print(f"pip install {' '.join(missing_packages)}")
+            return False
+
+    return True
 
 def main():
-    """Start the dashboard server."""
-    print(f"Starting trading dashboard server on port {PORT}...")
-    print(f"Dashboard will be available at: http://localhost:{PORT}")
-    print("Press Ctrl+C to stop the server")
-    
+    """Launch the advanced dashboard server."""
+    print("🚀 AsterAI Advanced RTX Trading Dashboard")
+    print("=" * 60)
+    print("🎮 GPU-Accelerated Real-Time Trading Interface")
+    print("📊 Live Experiment Results & Performance Monitoring")
+    print("⚡ WebSocket Live Data Streaming")
+    print("=" * 60)
+
+    # Check dependencies
+    if not check_dependencies():
+        return
+
+    # Kill any existing processes on port 8081
     try:
-        with socketserver.TCPServer(("", PORT), DashboardHandler) as httpd:
-            # Open browser after a short delay
-            Timer(1.0, open_browser).start()
-            
-            print(f"Server started successfully!")
-            httpd.serve_forever()
+        if sys.platform == "win32":
+            subprocess.run("netstat -ano | findstr :8081 | findstr LISTENING", shell=True, capture_output=True)
+            # Kill process if found
+            result = subprocess.run("netstat -ano | findstr :8081 | findstr LISTENING", shell=True, capture_output=True, text=True)
+            if result.stdout:
+                lines = result.stdout.strip().split('\n')
+                for line in lines:
+                    if line.strip():
+                        parts = line.split()
+                        if len(parts) >= 5:
+                            pid = parts[4]
+                            try:
+                                subprocess.run(f"taskkill /f /pid {pid}", shell=True, capture_output=True)
+                                print(f"✅ Killed existing process on port 8081 (PID: {pid})")
+                            except:
+                                pass
+        else:
+            subprocess.run("pkill -f 'python.*advanced_dashboard_server'", shell=True, capture_output=True)
+    except:
+        pass
+
+    print("\n🌐 Starting Advanced Dashboard Server...")
+    print("📊 Features:")
+    print("   • Real-time GPU performance monitoring")
+    print("   • Live experiment results streaming")
+    print("   • Interactive trading controls")
+    print("   • Auto-updating charts and metrics")
+    print("   • WebSocket live data connections")
+    print()
+
+    try:
+        # Launch the advanced dashboard
+        subprocess.run([sys.executable, 'advanced_dashboard_server.py'], check=True)
     except KeyboardInterrupt:
-        print("\nServer stopped.")
+        print("\n🛑 Dashboard server stopped by user.")
+    except subprocess.CalledProcessError as e:
+        print(f"\n❌ Error starting dashboard server: {e}")
     except Exception as e:
-        print(f"Error starting server: {e}")
+        print(f"\n❌ Unexpected error: {e}")
+
+    print("\n✅ Dashboard server shutdown complete.")
 
 if __name__ == "__main__":
     main()

@@ -4,6 +4,118 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aster AI Trading Platform</title>
+    <script>
+      const API_BASE_URL = (window.API_BASE_URL || 'https://aster-self-learning-trader-880429861698.us-central1.run.app');
+      window.addEventListener('DOMContentLoaded', () => {
+        const statusEl = document.getElementById('status-badge');
+        const kpiBalance = document.getElementById('kpi-balance');
+        const kpiPnl = document.getElementById('kpi-pnl');
+        const kpiWin = document.getElementById('kpi-win');
+        const kpiDd = document.getElementById('kpi-dd');
+        const lastUpdated = document.getElementById('last-updated');
+
+        function safeFetch(path, opts) {
+          return fetch(`${API_BASE_URL}${path}`, Object.assign({ mode: 'cors', credentials: 'omit' }, opts))
+            .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+        }
+
+        function updateFromSnapshot(snap) {
+          if (!snap) return;
+
+          // Update portfolio balance display
+          const portfolioBalance = snap.portfolio?.balance || snap.metrics?.balance || 100.00;
+          const availableBalance = snap.portfolio?.available || portfolioBalance;
+          const lockedBalance = snap.portfolio?.locked || 0.00;
+          const unrealizedPnl = snap.portfolio?.unrealized_pnl || 0.00;
+          const realizedPnl = snap.portfolio?.realized_pnl || 0.00;
+
+          if (document.getElementById('portfolio-balance')) {
+            document.getElementById('portfolio-balance').textContent = formatCurrency(portfolioBalance);
+          }
+          if (document.getElementById('available-balance')) {
+            document.getElementById('available-balance').textContent = formatCurrency(availableBalance);
+          }
+          if (document.getElementById('locked-balance')) {
+            document.getElementById('locked-balance').textContent = formatCurrency(lockedBalance);
+          }
+          if (document.getElementById('unrealized-pnl')) {
+            document.getElementById('unrealized-pnl').textContent = formatCurrency(unrealizedPnl);
+            document.getElementById('unrealized-pnl').className = `balance-item-value ${unrealizedPnl >= 0 ? 'positive' : 'negative'}`;
+          }
+          if (document.getElementById('realized-pnl')) {
+            document.getElementById('realized-pnl').textContent = formatCurrency(realizedPnl);
+            document.getElementById('realized-pnl').className = `balance-item-value ${realizedPnl >= 0 ? 'positive' : 'negative'}`;
+          }
+
+          // Update balance change indicator
+          const balanceChangeEl = document.getElementById('balance-change-indicator');
+          if (balanceChangeEl && snap.portfolio?.balance_change) {
+            const change = snap.portfolio.balance_change;
+            const changeText = `${change >= 0 ? '+' : ''}${formatCurrency(change)} (${change >= 0 ? '+' : ''}${((change / portfolioBalance) * 100).toFixed(2)}%)`;
+            balanceChangeEl.innerHTML = `
+              <i class="fas ${change >= 0 ? 'fa-arrow-up' : 'fa-arrow-down'}"></i>
+              ${changeText}
+            `;
+            balanceChangeEl.className = `balance-change ${change >= 0 ? 'positive' : 'negative'}`;
+          }
+
+          // Update key metrics
+          if (kpiBalance) kpiBalance.textContent = (snap.metrics?.balance ?? 0).toFixed(2);
+          if (kpiPnl) kpiPnl.textContent = (snap.metrics?.total_pnl ?? 0).toFixed(2);
+          if (kpiWin) kpiWin.textContent = `${((snap.metrics?.win_rate ?? 0)*100).toFixed(1)}%`;
+          if (kpiDd) kpiDd.textContent = `${Math.max(0, (snap.metrics?.max_drawdown ?? 0)).toFixed(2)}%`;
+
+          // Update additional metrics
+          if (document.getElementById('active-positions')) {
+            document.getElementById('active-positions').textContent = snap.positions?.length || 0;
+          }
+          if (document.getElementById('daily-trades')) {
+            document.getElementById('daily-trades').textContent = snap.metrics?.daily_trades || 0;
+          }
+          if (document.getElementById('max-drawdown')) {
+            document.getElementById('max-drawdown').textContent = `${(snap.metrics?.max_drawdown || 0).toFixed(2)}%`;
+          }
+          if (document.getElementById('sharpe-ratio')) {
+            document.getElementById('sharpe-ratio').textContent = (snap.metrics?.sharpe_ratio || 0).toFixed(2);
+          }
+
+          // Update positions table
+          if (snap.positions) {
+            updatePositionsTable(snap.positions);
+          }
+
+          // Update bot status
+          if (snap.status) {
+            updateBotStatus(snap.status);
+          }
+
+          if (lastUpdated) lastUpdated.textContent = new Date().toLocaleTimeString();
+        }
+
+        // SSE stream first, fallback to polling
+        try {
+          const es = new EventSource(`${API_BASE_URL}/stream`);
+          es.onmessage = (ev) => {
+            try { updateFromSnapshot(JSON.parse(ev.data)); } catch {}
+          };
+          es.onerror = () => {
+            es.close();
+            startPolling();
+          };
+        } catch (e) { startPolling(); }
+
+        function startPolling() {
+          setInterval(() => {
+            safeFetch('/metrics').then(data => updateFromSnapshot({ metrics: data.latest })).catch(() => {});
+          }, 5000);
+        }
+
+        // Initial status check
+        safeFetch('/status')
+          .then(s => { if (statusEl) statusEl.textContent = s.status?.toUpperCase?.() || 'UNKNOWN'; })
+          .catch(() => { if (statusEl) statusEl.textContent = 'ERROR'; });
+      });
+    </script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -317,18 +429,351 @@
             color: var(--gray);
         }
 
+        /* Portfolio Overview */
+        .portfolio-overview {
+            background: var(--dark-light);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .portfolio-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .portfolio-header h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .portfolio-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .portfolio-balance {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .balance-main {
+            text-align: center;
+        }
+
+        .balance-amount {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .balance-label {
+            color: var(--gray-light);
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .balance-change {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .balance-change.positive {
+            color: var(--success);
+        }
+
+        .balance-change.negative {
+            color: var(--error);
+        }
+
+        .balance-breakdown {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        .balance-item {
+            background: var(--dark);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1rem;
+        }
+
+        .balance-item-label {
+            color: var(--gray-light);
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .balance-item-value {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .balance-item-value.positive {
+            color: var(--success);
+        }
+
+        .balance-item-value.negative {
+            color: var(--error);
+        }
+
+        /* Control Panel */
+        .control-panel {
+            background: var(--dark-light);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .control-panel h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .control-group {
+            background: var(--dark);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+        }
+
+        .control-group h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        .control-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .control-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .control-label {
+            font-size: 0.875rem;
+            color: var(--gray-light);
+        }
+
+        .control-value {
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .control-input {
+            width: 80px;
+            padding: 0.25rem 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 0.25rem;
+            background: var(--dark-light);
+            color: var(--white);
+            font-size: 0.875rem;
+        }
+
+        .control-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            background: transparent;
+            color: var(--gray-light);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover, .btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: var(--white);
+        }
+
+        .btn.success {
+            background: var(--success);
+            border-color: var(--success);
+        }
+
+        .btn.warning {
+            background: var(--warning);
+            border-color: var(--warning);
+        }
+
+        .btn.error {
+            background: var(--error);
+            border-color: var(--error);
+        }
+
+        /* Trading Positions Table */
+        .positions-table {
+            background: var(--dark-light);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .positions-table h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        .positions-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .positions-table th,
+        .positions-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .positions-table th {
+            font-weight: 600;
+            color: var(--gray-light);
+            background: var(--dark);
+        }
+
+        .positions-table td {
+            font-size: 0.875rem;
+        }
+
+        .position-symbol {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .position-side.long {
+            color: var(--success);
+        }
+
+        .position-side.short {
+            color: var(--error);
+        }
+
+        .position-pnl.positive {
+            color: var(--success);
+        }
+
+        .position-pnl.negative {
+            color: var(--error);
+        }
+
+        /* Enhanced Charts */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-card {
+            background: var(--dark-light);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 2rem;
+        }
+
+        .chart-card h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .chart-placeholder {
+            height: 250px;
+            background: var(--dark);
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gray-light);
+            font-style: italic;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .hero h1 {
                 font-size: 2rem;
             }
-            
+
             .dashboard-grid {
                 grid-template-columns: 1fr;
             }
-            
+
             .nav {
                 display: none;
+            }
+
+            .portfolio-balance {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .balance-breakdown {
+                grid-template-columns: 1fr;
+            }
+
+            .control-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -345,6 +790,28 @@
 
         @keyframes spin {
             to { transform: rotate(360deg); }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
         }
     </style>
 </head>
@@ -377,27 +844,279 @@
                 <p>Advanced algorithmic trading powered by artificial intelligence and real-time market analysis</p>
             </div>
 
-            <!-- Metrics -->
-            <div class="metrics-grid">
-                <div class="metric">
-                    <div class="metric-value" id="total-balance">$100.00</div>
-                    <div class="metric-label">Total Balance</div>
-                    <div class="metric-change positive" id="balance-change">+$0.00 (0.00%)</div>
+            <!-- Enhanced Portfolio Balance Display -->
+            <div class="portfolio-overview">
+                <div class="portfolio-header">
+                    <h2>Portfolio Overview</h2>
+                    <div class="portfolio-controls">
+                        <button class="btn" onclick="refreshPortfolio()">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                        <button class="btn" onclick="toggleAutoRefresh()">
+                            <i class="fas fa-pause" id="auto-refresh-icon"></i> Auto
+                        </button>
+                    </div>
                 </div>
+
+                <div class="portfolio-balance">
+                    <div class="balance-main">
+                        <div class="balance-amount" id="portfolio-balance">$100.00</div>
+                        <div class="balance-label">Total Portfolio Value</div>
+                        <div class="balance-change" id="balance-change-indicator">
+                            <i class="fas fa-arrow-up"></i> +$0.00 (0.00%)
+                        </div>
+                    </div>
+                    <div class="balance-breakdown">
+                        <div class="balance-item">
+                            <div class="balance-item-label">Available Balance</div>
+                            <div class="balance-item-value" id="available-balance">$100.00</div>
+                        </div>
+                        <div class="balance-item">
+                            <div class="balance-item-label">Locked in Positions</div>
+                            <div class="balance-item-value" id="locked-balance">$0.00</div>
+                        </div>
+                        <div class="balance-item">
+                            <div class="balance-item-label">Unrealized P&L</div>
+                            <div class="balance-item-value" id="unrealized-pnl">+$0.00</div>
+                        </div>
+                        <div class="balance-item">
+                            <div class="balance-item-label">Realized P&L</div>
+                            <div class="balance-item-value" id="realized-pnl">+$0.00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Key Metrics -->
+            <div class="metrics-grid">
                 <div class="metric">
                     <div class="metric-value" id="total-pnl">+$0.00</div>
                     <div class="metric-label">Total P&L</div>
                     <div class="metric-change positive" id="pnl-change">+0.00%</div>
                 </div>
                 <div class="metric">
-                    <div class="metric-value" id="active-trades">0</div>
-                    <div class="metric-label">Active Trades</div>
+                    <div class="metric-value" id="active-positions">0</div>
+                    <div class="metric-label">Active Positions</div>
+                    <div class="metric-change" id="positions-change">0 symbols</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="daily-trades">0</div>
+                    <div class="metric-label">Daily Trades</div>
                     <div class="metric-change" id="trades-change">0 today</div>
                 </div>
                 <div class="metric">
                     <div class="metric-value" id="win-rate">0%</div>
                     <div class="metric-label">Win Rate</div>
                     <div class="metric-change" id="rate-change">Last 24h</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="max-drawdown">0%</div>
+                    <div class="metric-label">Max Drawdown</div>
+                    <div class="metric-change" id="drawdown-change">Current period</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="sharpe-ratio">0.00</div>
+                    <div class="metric-label">Sharpe Ratio</div>
+                    <div class="metric-change" id="sharpe-change">Risk-adjusted return</div>
+                </div>
+            </div>
+
+            <!-- Control Panel -->
+            <div class="control-panel">
+                <h3>
+                    <i class="fas fa-cog"></i>
+                    Bot Control Panel
+                </h3>
+                <div class="control-grid">
+                    <div class="control-group">
+                        <h4>Trading Controls</h4>
+                        <div class="control-item">
+                            <span class="control-label">Bot Status</span>
+                            <span class="control-value" id="bot-status-control">Running</span>
+                        </div>
+                        <div class="control-item">
+                            <span class="control-label">Trading Mode</span>
+                            <select class="control-input" id="trading-mode">
+                                <option value="live">Live Trading</option>
+                                <option value="paper">Paper Trading</option>
+                                <option value="demo">Demo Mode</option>
+                            </select>
+                        </div>
+                        <div class="control-item">
+                            <span class="control-label">Risk Level</span>
+                            <select class="control-input" id="risk-level">
+                                <option value="conservative">Conservative</option>
+                                <option value="moderate">Moderate</option>
+                                <option value="aggressive">Aggressive</option>
+                            </select>
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn success" onclick="startBot()">
+                                <i class="fas fa-play"></i> Start
+                            </button>
+                            <button class="btn warning" onclick="stopBot()">
+                                <i class="fas fa-pause"></i> Stop
+                            </button>
+                            <button class="btn error" onclick="restartBot()">
+                                <i class="fas fa-redo"></i> Restart
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <h4>Position Limits</h4>
+                        <div class="control-item">
+                            <span class="control-label">Max Position Size</span>
+                            <input type="number" class="control-input" id="max-position" value="100" step="10">
+                        </div>
+                        <div class="control-item">
+                            <span class="control-label">Daily Loss Limit</span>
+                            <input type="number" class="control-input" id="daily-loss-limit" value="50" step="5">
+                        </div>
+                        <div class="control-item">
+                            <span class="control-label">Max Open Positions</span>
+                            <input type="number" class="control-input" id="max-positions" value="5" min="1" max="10">
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn" onclick="updateLimits()">Update Limits</button>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <h4>Strategy Settings</h4>
+                        <div class="control-item">
+                            <span class="control-label">Primary Strategy</span>
+                            <select class="control-input" id="primary-strategy">
+                                <option value="momentum">Momentum</option>
+                                <option value="mean-reversion">Mean Reversion</option>
+                                <option value="breakout">Breakout</option>
+                                <option value="scalping">Scalping</option>
+                            </select>
+                        </div>
+                        <div class="control-item">
+                            <span class="control-label">Timeframe</span>
+                            <select class="control-input" id="timeframe">
+                                <option value="1m">1 Minute</option>
+                                <option value="5m">5 Minutes</option>
+                                <option value="15m">15 Minutes</option>
+                                <option value="1h">1 Hour</option>
+                            </select>
+                        </div>
+                        <div class="control-item">
+                            <span class="control-label">Enable ML Learning</span>
+                            <input type="checkbox" id="ml-learning" checked>
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn" onclick="updateStrategy()">Apply Settings</button>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <h4>Emergency Controls</h4>
+                        <div class="control-item">
+                            <span class="control-label">Emergency Stop</span>
+                            <span class="control-value" id="emergency-status">Inactive</span>
+                        </div>
+                        <div class="control-item">
+                            <span class="control-label">Close All Positions</span>
+                            <button class="btn error" onclick="closeAllPositions()">Close All</button>
+                        </div>
+                        <div class="control-item">
+                            <span class="control-label">Reset to Demo</span>
+                            <button class="btn warning" onclick="resetToDemo()">Reset Demo</button>
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn error" onclick="emergencyStop()" style="background: #dc2626;">
+                                <i class="fas fa-exclamation-triangle"></i> EMERGENCY STOP
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trading Positions -->
+            <div class="positions-table">
+                <h3>
+                    <i class="fas fa-chart-bar"></i>
+                    Current Positions
+                </h3>
+                <div class="table-container">
+                    <table id="positions-table">
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Side</th>
+                                <th>Quantity</th>
+                                <th>Entry Price</th>
+                                <th>Current Price</th>
+                                <th>Unrealized P&L</th>
+                                <th>Duration</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="positions-body">
+                            <tr>
+                                <td colspan="8" style="text-align: center; color: var(--gray-light);">
+                                    No active positions
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Enhanced Charts Section -->
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3>
+                        <i class="fas fa-chart-line"></i>
+                        Portfolio Performance
+                    </h3>
+                    <div class="chart-placeholder">
+                        <div style="text-align: center;">
+                            <i class="fas fa-chart-area" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                            <div>Equity curve will display here</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <h3>
+                        <i class="fas fa-chart-pie"></i>
+                        Asset Allocation
+                    </h3>
+                    <div class="chart-placeholder">
+                        <div style="text-align: center;">
+                            <i class="fas fa-pie-chart" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                            <div>Asset allocation pie chart</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <h3>
+                        <i class="fas fa-chart-heatmap"></i>
+                        Trade Heatmap
+                    </h3>
+                    <div class="chart-placeholder">
+                        <div style="text-align: center;">
+                            <i class="fas fa-th" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                            <div>Daily/weekly trade heatmap</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <h3>
+                        <i class="fas fa-chart-scatter"></i>
+                        Risk vs Return
+                    </h3>
+                    <div class="chart-placeholder">
+                        <div style="text-align: center;">
+                            <i class="fas fa-dot-circle" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                            <div>Risk-return scatter plot</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -736,6 +1455,296 @@
                 // In real implementation, update chart data here
             });
         });
+
+        // Portfolio and Control Panel Functions
+        let autoRefreshInterval = null;
+        let isAutoRefreshing = true;
+
+        function refreshPortfolio() {
+            // Force refresh all portfolio data
+            updateDashboard();
+            showNotification('Portfolio refreshed successfully', 'success');
+        }
+
+        function toggleAutoRefresh() {
+            const icon = document.getElementById('auto-refresh-icon');
+
+            if (isAutoRefreshing) {
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                    autoRefreshInterval = null;
+                }
+                icon.className = 'fas fa-play';
+                isAutoRefreshing = false;
+                showNotification('Auto-refresh paused', 'warning');
+            } else {
+                autoRefreshInterval = setInterval(updateDashboard, 5000);
+                icon.className = 'fas fa-pause';
+                isAutoRefreshing = true;
+                showNotification('Auto-refresh resumed', 'success');
+            }
+        }
+
+        function startBot() {
+            fetch(`${API_BASE_URL}/start`, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('bot-status-control').textContent = 'Starting...';
+                    showNotification('Bot starting...', 'success');
+                    setTimeout(updateDashboard, 1000);
+                })
+                .catch(error => {
+                    showNotification('Failed to start bot', 'error');
+                    console.error('Start bot error:', error);
+                });
+        }
+
+        function stopBot() {
+            fetch(`${API_BASE_URL}/stop`, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('bot-status-control').textContent = 'Stopping...';
+                    showNotification('Bot stopping...', 'warning');
+                    setTimeout(updateDashboard, 1000);
+                })
+                .catch(error => {
+                    showNotification('Failed to stop bot', 'error');
+                    console.error('Stop bot error:', error);
+                });
+        }
+
+        function restartBot() {
+            fetch(`${API_BASE_URL}/restart`, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('bot-status-control').textContent = 'Restarting...';
+                    showNotification('Bot restarting...', 'warning');
+                    setTimeout(updateDashboard, 2000);
+                })
+                .catch(error => {
+                    showNotification('Failed to restart bot', 'error');
+                    console.error('Restart bot error:', error);
+                });
+        }
+
+        function updateLimits() {
+            const maxPosition = document.getElementById('max-position').value;
+            const dailyLossLimit = document.getElementById('daily-loss-limit').value;
+            const maxPositions = document.getElementById('max-positions').value;
+
+            fetch(`${API_BASE_URL}/update-limits`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    max_position_size: parseFloat(maxPosition),
+                    daily_loss_limit: parseFloat(dailyLossLimit),
+                    max_open_positions: parseInt(maxPositions)
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                showNotification('Position limits updated successfully', 'success');
+            })
+            .catch(error => {
+                showNotification('Failed to update limits', 'error');
+                console.error('Update limits error:', error);
+            });
+        }
+
+        function updateStrategy() {
+            const primaryStrategy = document.getElementById('primary-strategy').value;
+            const timeframe = document.getElementById('timeframe').value;
+            const mlLearning = document.getElementById('ml-learning').checked;
+
+            fetch(`${API_BASE_URL}/update-strategy`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    primary_strategy: primaryStrategy,
+                    timeframe: timeframe,
+                    enable_ml_learning: mlLearning
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                showNotification('Strategy settings updated', 'success');
+            })
+            .catch(error => {
+                showNotification('Failed to update strategy', 'error');
+                console.error('Update strategy error:', error);
+            });
+        }
+
+        function closeAllPositions() {
+            if (confirm('Are you sure you want to close all positions? This action cannot be undone.')) {
+                fetch(`${API_BASE_URL}/close-all-positions`, { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        showNotification('All positions closed', 'success');
+                        setTimeout(updateDashboard, 1000);
+                    })
+                    .catch(error => {
+                        showNotification('Failed to close positions', 'error');
+                        console.error('Close positions error:', error);
+                    });
+            }
+        }
+
+        function resetToDemo() {
+            if (confirm('This will reset all settings to demo mode. Continue?')) {
+                fetch(`${API_BASE_URL}/reset-demo`, { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        showNotification('Reset to demo mode complete', 'success');
+                        setTimeout(updateDashboard, 1000);
+                    })
+                    .catch(error => {
+                        showNotification('Failed to reset to demo', 'error');
+                        console.error('Reset demo error:', error);
+                    });
+            }
+        }
+
+        function emergencyStop() {
+            if (confirm('EMERGENCY STOP: This will immediately halt all trading activity. Use only in critical situations.')) {
+                fetch(`${API_BASE_URL}/emergency-stop`, { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        document.getElementById('emergency-status').textContent = 'ACTIVE';
+                        document.getElementById('emergency-status').style.color = 'var(--error)';
+                        showNotification('EMERGENCY STOP ACTIVATED', 'error');
+                        setTimeout(updateDashboard, 1000);
+                    })
+                    .catch(error => {
+                        showNotification('Emergency stop failed', 'error');
+                        console.error('Emergency stop error:', error);
+                    });
+            }
+        }
+
+        function updatePositionsTable(positions) {
+            const tbody = document.getElementById('positions-body');
+
+            if (!positions || positions.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align: center; color: var(--gray-light);">
+                            No active positions
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = '';
+            positions.forEach(position => {
+                const pnlClass = position.unrealized_pnl >= 0 ? 'positive' : 'negative';
+                const sideClass = position.side === 'long' ? 'long' : 'short';
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="position-symbol">${position.symbol}</td>
+                    <td class="position-side ${sideClass}">${position.side.toUpperCase()}</td>
+                    <td>${position.quantity}</td>
+                    <td>${formatCurrency(position.entry_price)}</td>
+                    <td>${formatCurrency(position.current_price)}</td>
+                    <td class="position-pnl ${pnlClass}">${formatCurrency(position.unrealized_pnl)}</td>
+                    <td>${formatTime(new Date(position.opened_at))}</td>
+                    <td>
+                        <button class="btn" onclick="closePosition('${position.symbol}')" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">
+                            Close
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function closePosition(symbol) {
+            if (confirm(`Close position for ${symbol}?`)) {
+                fetch(`${API_BASE_URL}/close-position`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ symbol })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    showNotification(`Position ${symbol} closed`, 'success');
+                    setTimeout(updateDashboard, 1000);
+                })
+                .catch(error => {
+                    showNotification('Failed to close position', 'error');
+                    console.error('Close position error:', error);
+                });
+            }
+        }
+
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas ${getNotificationIcon(type)}"></i>
+                    ${message}
+                </div>
+                <button onclick="this.parentElement.remove()" style="background: none; border: none; color: inherit; cursor: pointer;">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+
+            // Add styles
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${getNotificationColor(type)};
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: 0.5rem;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                z-index: 1000;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 1rem;
+                max-width: 400px;
+                animation: slideIn 0.3s ease-out;
+            `;
+
+            document.body.appendChild(notification);
+
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.style.animation = 'slideOut 0.3s ease-in';
+                    setTimeout(() => notification.remove(), 300);
+                }
+            }, 5000);
+        }
+
+        function getNotificationIcon(type) {
+            const icons = {
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-circle',
+                warning: 'fa-exclamation-triangle',
+                info: 'fa-info-circle'
+            };
+            return icons[type] || icons.info;
+        }
+
+        function getNotificationColor(type) {
+            const colors = {
+                success: 'var(--success)',
+                error: 'var(--error)',
+                warning: 'var(--warning)',
+                info: 'var(--primary)'
+            };
+            return colors[type] || colors.info;
+        }
+
+        // Initialize auto-refresh
+        autoRefreshInterval = setInterval(updateDashboard, 5000);
     </script>
 </body>
 </html>

@@ -1,0 +1,146 @@
+# Prometheus Configuration for HFT Monitoring
+# Tracks latency, P&L, win rates, and system metrics
+
+global:
+  scrape_interval: 5s  # Scrape every 5 seconds for HFT
+  evaluation_interval: 5s
+  scrape_timeout: 4s
+  
+  external_labels:
+    cluster: 'hft-aster-trader'
+    environment: 'production'
+
+# Alerting Configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - 'localhost:9093'
+
+# Rule Files
+rule_files:
+  - 'alerts/*.yml'
+
+# Scrape Configurations
+scrape_configs:
+  # HFT Trading Agent Metrics
+  - job_name: 'hft-agent'
+    static_configs:
+      - targets: ['localhost:9090']
+    metrics_path: '/metrics'
+    scrape_interval: 1s  # 1s for critical HFT metrics
+    
+    # Relabeling
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'hft-trader'
+  
+  # Triton Inference Server Metrics
+  - job_name: 'triton'
+    static_configs:
+      - targets: ['localhost:8002']
+    metrics_path: '/metrics'
+    scrape_interval: 2s
+    
+  # Node Exporter (System Metrics)
+  - job_name: 'node'
+    static_configs:
+      - targets: ['localhost:9100']
+    scrape_interval: 10s
+    
+  # NVIDIA GPU Metrics
+  - job_name: 'nvidia-gpu'
+    static_configs:
+      - targets: ['localhost:9445']
+    scrape_interval: 5s
+    
+  # Custom HFT Metrics Endpoint
+  - job_name: 'hft-metrics'
+    static_configs:
+      - targets: ['localhost:8080']
+    metrics_path: '/hft/metrics'
+    scrape_interval: 1s  # Very frequent for HFT
+    
+    # Metric relabeling
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'hft_.*'
+        action: keep
+
+# Recording Rules for Aggregations
+# These pre-compute frequently used queries
+recording_rules:
+  - name: hft_latency_rules
+    interval: 5s
+    rules:
+      # Average latency over 1 minute
+      - record: hft:latency_ms:avg1m
+        expr: avg_over_time(hft_cycle_latency_ms[1m])
+      
+      # P95 latency
+      - record: hft:latency_ms:p95
+        expr: histogram_quantile(0.95, rate(hft_cycle_latency_ms_bucket[1m]))
+      
+      # P99 latency
+      - record: hft:latency_ms:p99
+        expr: histogram_quantile(0.99, rate(hft_cycle_latency_ms_bucket[1m]))
+  
+  - name: hft_trading_rules
+    interval: 10s
+    rules:
+      # Win rate over last 100 trades
+      - record: hft:win_rate:100trades
+        expr: |
+          sum(increase(hft_winning_trades_total[5m])) / 
+          sum(increase(hft_total_trades_total[5m]))
+      
+      # Daily P&L
+      - record: hft:pnl_usd:daily
+        expr: sum(increase(hft_pnl_usd_total[24h]))
+      
+      # Hourly return rate
+      - record: hft:return_rate:hourly
+        expr: |
+          (hft_capital_usd - hft_capital_usd offset 1h) / 
+          (hft_capital_usd offset 1h)
+  
+  - name: hft_risk_rules
+    interval: 30s
+    rules:
+      # Current drawdown
+      - record: hft:drawdown:current
+        expr: |
+          (max_over_time(hft_capital_usd[24h]) - hft_capital_usd) / 
+          max_over_time(hft_capital_usd[24h])
+      
+      # Position concentration
+      - record: hft:position_concentration:pct
+        expr: |
+          sum(hft_position_size_usd) / hft_capital_usd * 100
+
+# Storage Configuration
+storage:
+  tsdb:
+    path: /prometheus/data
+    retention:
+      time: 30d  # Keep 30 days of data
+      size: 10GB  # Max 10GB storage
+    
+    # Compression for storage efficiency
+    wal_compression: true
+
+# Remote Write (Optional - for long-term storage)
+# remote_write:
+#   - url: 'https://monitoring.googleapis.com/v1/projects/PROJECT_ID/timeSeries'
+#     queue_config:
+#       capacity: 10000
+#       max_shards: 10
+#       max_samples_per_send: 500
+#       batch_send_deadline: 5s
+
+# Remote Read (Optional)
+# remote_read:
+#   - url: 'https://monitoring.googleapis.com/v1/projects/PROJECT_ID/timeSeries:query'
+#     read_recent: true
+

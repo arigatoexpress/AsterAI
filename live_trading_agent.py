@@ -463,11 +463,16 @@ class LiveTradingAgent:
                 'timestamp', 'open', 'high', 'low', 'close', 'volume', 'close_time',
                 'quote_volume', 'trades', 'taker_buy_base', 'taker_buy_quote', 'ignore'
             ])
-            
+
+            # Check if we have enough data
+            if klines_df.empty:
+                logger.warning(f"No kline data available for {symbol}, skipping signal generation")
+                return None
+
             # Convert to numeric
             for col in ['open', 'high', 'low', 'close', 'volume']:
                 klines_df[col] = pd.to_numeric(klines_df[col])
-            
+
             # Generate signal
             signal = strategy.generate_signal(klines_df.iloc[-1])
             

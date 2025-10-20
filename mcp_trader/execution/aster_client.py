@@ -182,7 +182,7 @@ def handle_api_error(func):
         except aiohttp.ClientError as e:
             logger.error(f"HTTP client error in {func.__name__}: {e}")
             raise
-        except websockets.exceptions.WebSocketException as e:
+        except websockets.WebSocketException as e:
             logger.error(f"WebSocket error in {func.__name__}: {e}")
             raise
         except json.JSONDecodeError as e:
@@ -1925,7 +1925,7 @@ class AsterWebSocketClient:
                     if stream in self.callbacks:
                         await self.callbacks[stream](data)
                 
-        except websockets.exceptions.ConnectionClosed:
+        except websockets.ConnectionClosed:
             logger.warning("WebSocket connection closed")
         except Exception as e:
             logger.error(f"Error in WebSocket listener: {e}")
