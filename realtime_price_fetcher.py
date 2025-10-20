@@ -173,7 +173,7 @@ class RealTimePriceFetcher:
 
         # Try multiple sources in order of preference
         sources = [
-            ('binance', self.get_binance_prices),
+            ('binance', self.get_binance_prices),  # Now available with Iceland VPN
             ('coingecko', self.get_coingecko_prices),
             ('yahoo_finance', self.get_yahoo_finance_prices)
         ]

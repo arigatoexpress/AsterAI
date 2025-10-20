@@ -19,6 +19,14 @@ from collections import deque
 import json
 from pydantic import BaseModel
 
+# Data persistence imports
+try:
+    from google.cloud import firestore
+    _firestore_available = True
+except ImportError:
+    _firestore_available = False
+    logger.warning("Firestore not available for data persistence")
+
 # Set up logging early
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -57,6 +65,46 @@ performance_data = []
 metrics_buffer: deque = deque(maxlen=500)
 market_buffer: deque = deque(maxlen=500)
 positions_buffer: deque = deque(maxlen=500)
+
+# Data persistence setup
+if _firestore_available:
+    try:
+        db = firestore.Client()
+        persistence_collection = db.collection('trading_snapshots')
+        logger.info("Firestore initialized for data persistence")
+    except Exception as e:
+        logger.error(f"Failed to initialize Firestore: {e}")
+        db = None
+else:
+    db = None
+
+def persist_snapshot(snapshot_data: Dict[str, Any]) -> None:
+    """Persist snapshot data to Firestore"""
+    if not db or not _firestore_available:
+        return
+
+    try:
+        # Add timestamp if not present
+        if 'timestamp' not in snapshot_data:
+            snapshot_data['timestamp'] = datetime.now()
+
+        # Persist to Firestore
+        persistence_collection.add(snapshot_data)
+        logger.debug("Snapshot persisted to Firestore")
+    except Exception as e:
+        logger.error(f"Failed to persist snapshot: {e}")
+
+def get_persisted_snapshots(limit: int = 100) -> List[Dict[str, Any]]:
+    """Retrieve recent snapshots from Firestore"""
+    if not db or not _firestore_available:
+        return []
+
+    try:
+        docs = persistence_collection.order_by('timestamp', direction=firestore.Query.DESCENDING).limit(limit).stream()
+        return [doc.to_dict() for doc in docs]
+    except Exception as e:
+        logger.error(f"Failed to retrieve snapshots: {e}")
+        return []
 
 class TradeRequest(BaseModel):
     symbol: str
@@ -152,11 +200,38 @@ async def get_market_data():
 async def get_metrics():
     """Return recent performance metrics and latest snapshot."""
     latest = metrics_buffer[-1] if metrics_buffer else None
+
+    # If no live data, try to get from persisted data
+    if not latest and _firestore_available:
+        try:
+            persisted = get_persisted_snapshots(1)
+            if persisted:
+                latest = persisted[0]
+        except Exception as e:
+            logger.warning(f"Failed to retrieve persisted metrics: {e}")
+
     return {
         "latest": latest,
         "samples": list(metrics_buffer)[-50:],
-        "count": len(metrics_buffer)
+        "count": len(metrics_buffer),
+        "persisted_count": len(get_persisted_snapshots(100)) if _firestore_available else 0
     }
+
+@app.get("/snapshots")
+async def get_snapshots(limit: int = 100):
+    """Return persisted snapshots from Firestore"""
+    if not _firestore_available:
+        return {"error": "Persistence not available"}
+
+    try:
+        snapshots = get_persisted_snapshots(limit)
+        return {
+            "snapshots": snapshots,
+            "count": len(snapshots)
+        }
+    except Exception as e:
+        logger.error(f"Failed to retrieve snapshots: {e}")
+        return {"error": str(e)}
 
 @app.get("/orders")
 async def get_orders():
@@ -409,6 +484,16 @@ async def _update_buffers_loop():
                         "entry": p.entry_price,
                     })
                 positions_buffer.append(pos)
+
+                # Persist snapshot every 10 updates (every 10 seconds)
+                if len(metrics_buffer) % 10 == 0 and _firestore_available:
+                    snapshot = {
+                        "metrics": metrics,
+                        "market": {k: v for k, v in list(md.items())[:5]},  # Light market data
+                        "positions": pos,
+                        "timestamp": datetime.now()
+                    }
+                    persist_snapshot(snapshot)
         except Exception as e:
             logger.warning(f"Buffer update error: {e}")
         await asyncio.sleep(1.0)

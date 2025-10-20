@@ -26,3 +26,4 @@ safety
 pre-commit
 uvicorn[standard]==0.24.0
 fastapi==0.104.1
+google-cloud-firestore==2.16.0

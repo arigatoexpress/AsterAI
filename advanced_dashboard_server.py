@@ -61,6 +61,164 @@ market_data = {
 # Real-time price fetcher
 price_fetcher = RealTimePriceFetcher()
 
+# Symbol mapping utilities
+SYMBOL_TO_FILE = {
+    'BTC': 'btc',
+    'ETH': 'eth'
+}
+SYMBOL_TO_YF = {
+    'BTC': 'BTC-USD',
+    'ETH': 'ETH-USD'
+}
+
+def _load_local_candles(symbol: str) -> Optional[pd.DataFrame]:
+    """Load local historical candles from parquet, return DataFrame with datetime index and ohlc columns."""
+    try:
+        sym = SYMBOL_TO_FILE.get(symbol.upper(), symbol.lower())
+        candidates = [
+            f"data/historical/crypto/{sym}.parquet",
+            f"data/historical/ultimate_dataset/crypto/{sym}.parquet",
+            f"data/local_cache/{sym}_historical.parquet"
+        ]
+        for path in candidates:
+            if os.path.exists(path):
+                df = pd.read_parquet(path)
+                # Normalize
+                if 'timestamp' in df.columns:
+                    df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce', utc=True)
+                    df = df.set_index('timestamp')
+                elif df.index.name is None or not np.issubdtype(df.index.dtype, np.datetime64):
+                    # Try to infer index
+                    try:
+                        df.index = pd.to_datetime(df.index, errors='coerce', utc=True)
+                    except Exception:
+                        pass
+                df = df.sort_index()
+                # Standardize column names
+                cols = {c.lower(): c for c in df.columns}
+                for col in ['open', 'high', 'low', 'close', 'volume']:
+                    if col not in df.columns and col in cols:
+                        df[col] = df[cols[col]]
+                needed = [c for c in ['open','high','low','close'] if c in df.columns]
+                if len(needed) >= 4:
+                    return df
+        return None
+    except Exception as e:
+        logger.warning(f"Local candles load failed for {symbol}: {e}")
+        return None
+
+def _fetch_api_candles(symbol: str, interval: str = '1m', lookback_hours: int = 6) -> Optional[pd.DataFrame]:
+    """Fetch recent candles from Yahoo Finance as a free reliable source for crypto."""
+    try:
+        import yfinance as yf
+        yf_symbol = SYMBOL_TO_YF.get(symbol.upper(), symbol.upper())
+        period = '1d' if lookback_hours <= 24 else '5d'
+        yf_interval = '1m' if interval == '1m' else '5m'
+        ticker = yf.Ticker(yf_symbol)
+        hist = ticker.history(period=period, interval=yf_interval)
+        if hist is None or hist.empty:
+            return None
+        hist = hist.tz_convert('UTC') if hist.index.tz is not None else hist.tz_localize('UTC')
+        df = pd.DataFrame({
+            'open': hist['Open'].astype(float),
+            'high': hist['High'].astype(float),
+            'low': hist['Low'].astype(float),
+            'close': hist['Close'].astype(float),
+            'volume': hist.get('Volume', 0)
+        }, index=hist.index)
+        return df
+    except Exception as e:
+        logger.warning(f"API candles fetch failed for {symbol}: {e}")
+        return None
+
+def _merge_candles(local_df: Optional[pd.DataFrame], api_df: Optional[pd.DataFrame]) -> Optional[pd.DataFrame]:
+    """Chronologically merge local and API candles without duplicates, prefer newer API where overlapping."""
+    if local_df is None and api_df is None:
+        return None
+    if local_df is None:
+        return api_df.sort_index()
+    if api_df is None:
+        return local_df.sort_index()
+    # Concatenate and drop duplicates by index, keeping last (API overwrites local on overlap)
+    df = pd.concat([local_df, api_df])
+    df = df[~df.index.duplicated(keep='last')]
+    df = df.sort_index()
+    # Keep only standard columns
+    for col in ['open','high','low','close','volume']:
+        if col not in df.columns:
+            df[col] = np.nan
+    return df[['open','high','low','close','volume']]
+
+def _compute_indicators(df: pd.DataFrame) -> Dict[str, Any]:
+    """Compute basic indicators: SMA20, SMA50, RSI14."""
+    out: Dict[str, Any] = {}
+    if df is None or df.empty:
+        return out
+    close = df['close'].astype(float)
+    out['sma20'] = close.rolling(20).mean().fillna(method='bfill').tolist()
+    out['sma50'] = close.rolling(50).mean().fillna(method='bfill').tolist()
+    # RSI
+    delta = close.diff()
+    up = delta.clip(lower=0)
+    down = -delta.clip(upper=0)
+    roll_up = up.rolling(14).mean()
+    roll_down = down.rolling(14).mean()
+    rs = roll_up / (roll_down.replace(0, np.nan))
+    rsi = 100 - (100 / (1 + rs))
+    rsi = rsi.fillna(method='bfill').fillna(50)
+    out['rsi14'] = rsi.tolist()
+    return out
+
+def _generate_alerts(df: pd.DataFrame, indicators: Dict[str, Any]) -> List[str]:
+    alerts: List[str] = []
+    if df is None or df.empty:
+        return alerts
+    try:
+        close = df['close'].astype(float)
+        sma20 = pd.Series(indicators.get('sma20', []), index=df.index)
+        sma50 = pd.Series(indicators.get('sma50', []), index=df.index)
+        rsi14 = pd.Series(indicators.get('rsi14', []), index=df.index)
+        if len(close) >= 2 and len(sma20) >= 2:
+            if close.iloc[-2] < sma20.iloc[-2] and close.iloc[-1] > sma20.iloc[-1]:
+                alerts.append("Bullish: Close crossed above SMA20")
+            if close.iloc[-2] > sma20.iloc[-2] and close.iloc[-1] < sma20.iloc[-1]:
+                alerts.append("Bearish: Close crossed below SMA20")
+        if len(sma20) >= 1 and len(sma50) >= 1:
+            if sma20.iloc[-1] > sma50.iloc[-1]:
+                alerts.append("Trend: SMA20 above SMA50 (uptrend)")
+            else:
+                alerts.append("Trend: SMA20 below SMA50 (downtrend)")
+        if len(rsi14) >= 1:
+            rsi = rsi14.iloc[-1]
+            if rsi > 70:
+                alerts.append("RSI: Overbought (>70)")
+            elif rsi < 30:
+                alerts.append("RSI: Oversold (<30)")
+    except Exception:
+        pass
+    return alerts
+
+def _explain_market(df: pd.DataFrame, indicators: Dict[str, Any], symbol: str) -> str:
+    try:
+        if df is None or df.empty:
+            return f"No data available for {symbol}."
+        close = df['close'].astype(float)
+        last_price = close.iloc[-1]
+        sma20 = indicators.get('sma20', [])
+        sma50 = indicators.get('sma50', [])
+        rsi = indicators.get('rsi14', [])
+        last_sma20 = sma20[-1] if sma20 else None
+        last_sma50 = sma50[-1] if sma50 else None
+        last_rsi = rsi[-1] if rsi else None
+        trend = "uptrend" if last_sma20 is not None and last_sma50 is not None and last_sma20 > last_sma50 else "downtrend"
+        return (
+            f"{symbol}: Price {last_price:.2f} USD; {trend}. "
+            f"SMA20={last_sma20:.2f} SMA50={last_sma50:.2f}; RSI14={last_rsi:.1f}. "
+            "Signals and overlays are based on merged local+API data."
+        )
+    except Exception:
+        return f"Computed summary not available for {symbol}."
+
 # Matrix-themed HTML template
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -315,6 +473,21 @@ HTML_TEMPLATE = """
                 <h3>📈 Portfolio Performance Chart</h3>
                 <div id="performanceChart" style="height: 400px;"></div>
             </div>
+
+        <div class="card">
+            <h3>🕰️ Merged Candles & Indicators</h3>
+            <div style="margin-bottom: 1rem; display: flex; gap: 1rem; align-items: center;">
+                <label for="symbolSelect">Symbol:</label>
+                <select id="symbolSelect">
+                    <option value="BTC" selected>BTC</option>
+                    <option value="ETH">ETH</option>
+                </select>
+                <button class="nav-btn" onclick="loadMergedData()">Refresh</button>
+                <span id="analysisSummary" style="margin-left: auto; color: #00ff99;"></span>
+            </div>
+            <div id="mergedChart" style="height: 420px;"></div>
+            <div id="alertsBox" class="metric" style="margin-top: 1rem; text-align: left;"></div>
+        </div>
         </div>
 
         <!-- Trading Panel Page -->
@@ -556,6 +729,88 @@ HTML_TEMPLATE = """
             ETH: {price: 3000.0, change: -0.2}
         });
         updateTradingData({total_trades: 0, win_rate: 0, sharpe_ratio: 0, max_drawdown: 0});
+
+        // Load merged candles + indicators
+        async function loadMergedData() {
+            const symbol = document.getElementById('symbolSelect').value;
+            try {
+                const [candlesResp, indicatorsResp] = await Promise.all([
+                    fetch(`/api/merged-candles?symbol=${symbol}&interval=1m`),
+                    fetch(`/api/indicators?symbol=${symbol}&interval=1m`)
+                ]);
+                const candlesData = await candlesResp.json();
+                const indiData = await indicatorsResp.json();
+
+                renderMergedChart(candlesData, indiData);
+            } catch (err) {
+                console.error('Error loading merged data:', err);
+            }
+        }
+
+        function renderMergedChart(candlesData, indiData) {
+            const candles = candlesData.candles || [];
+            if (candles.length === 0) {
+                document.getElementById('analysisSummary').textContent = 'No data available';
+                return;
+            }
+            const times = candles.map(c => c.timestamp);
+            const open = candles.map(c => c.open);
+            const high = candles.map(c => c.high);
+            const low = candles.map(c => c.low);
+            const close = candles.map(c => c.close);
+
+            const traceCandle = {
+                x: times,
+                open: open,
+                high: high,
+                low: low,
+                close: close,
+                type: 'candlestick',
+                name: 'Price'
+            };
+
+            const ind = indiData.indicators || {};
+            const sma20 = (ind.sma20 || []).slice(-times.length);
+            const sma50 = (ind.sma50 || []).slice(-times.length);
+            const rsi14 = (ind.rsi14 || []).slice(-times.length);
+
+            const traceSMA20 = {
+                x: times,
+                y: sma20,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'SMA20',
+                line: { color: '#00ff99' }
+            };
+            const traceSMA50 = {
+                x: times,
+                y: sma50,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'SMA50',
+                line: { color: '#0099ff' }
+            };
+
+            const layout = {
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                xaxis: { title: 'Time' },
+                yaxis: { title: 'Price (USD)' },
+                font: { color: '#00ff00' }
+            };
+
+            Plotly.newPlot('mergedChart', [traceCandle, traceSMA20, traceSMA50], layout, {displayModeBar: false});
+
+            // Alerts and explanation
+            const alerts = indiData.alerts || [];
+            const explanation = indiData.explanation || '';
+            document.getElementById('analysisSummary').textContent = explanation;
+            const alertsBox = document.getElementById('alertsBox');
+            alertsBox.innerHTML = `<b>Alerts:</b><br>` + (alerts.length ? alerts.map(a => `• ${a}`).join('<br>') : 'None');
+        }
+
+        // Auto-load on startup
+        loadMergedData();
     </script>
 </body>
 </html>
@@ -565,6 +820,42 @@ HTML_TEMPLATE = """
 def index():
     """Serve the main dashboard page."""
     return render_template_string(HTML_TEMPLATE)
+
+@app.route('/api/merged-candles')
+def api_merged_candles():
+    """Return merged candles (local parquet + API) for a symbol."""
+    symbol = request.args.get('symbol', 'BTC').upper()
+    interval = request.args.get('interval', '1m')
+    local_df = _load_local_candles(symbol)
+    api_df = _fetch_api_candles(symbol, interval=interval)
+    merged = _merge_candles(local_df, api_df)
+    if merged is None or merged.empty:
+        return jsonify({'symbol': symbol, 'candles': []})
+    candles = []
+    for ts, row in merged.iterrows():
+        candles.append({
+            'timestamp': ts.isoformat(),
+            'open': float(row['open']),
+            'high': float(row['high']),
+            'low': float(row['low']),
+            'close': float(row['close']),
+            'volume': float(row.get('volume', 0) or 0)
+        })
+    return jsonify({'symbol': symbol, 'interval': interval, 'candles': candles})
+
+@app.route('/api/indicators')
+def api_indicators():
+    symbol = request.args.get('symbol', 'BTC').upper()
+    interval = request.args.get('interval', '1m')
+    local_df = _load_local_candles(symbol)
+    api_df = _fetch_api_candles(symbol, interval=interval)
+    merged = _merge_candles(local_df, api_df)
+    if merged is None or merged.empty:
+        return jsonify({'symbol': symbol, 'indicators': {}, 'alerts': [], 'explanation': f'No data for {symbol}.'})
+    indicators = _compute_indicators(merged)
+    alerts = _generate_alerts(merged, indicators)
+    explanation = _explain_market(merged, indicators, symbol)
+    return jsonify({'symbol': symbol, 'indicators': indicators, 'alerts': alerts, 'explanation': explanation})
 
 @app.route('/api/system-status')
 def get_system_status():

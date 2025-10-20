@@ -149,9 +149,10 @@ async def main():
         print("\n💾 Saving final trading session...")
         if 'agent' in locals():
             status = agent.get_status()
-            print("📊 Final Status:"            print(f"   • Total P&L: ${status['metrics']['total_pnl']:.2f}")
+            print("📊 Final Status:")
+            print(f"   • Total P&L: ${status['metrics']['total_pnl']:.2f}")
             print(f"   • Total Trades: {status['metrics']['total_trades']}")
-            print(".1%")
+            print(f"   • Win Rate: {status['metrics']['win_rate']:.1%}")
             print(f"   • Active Positions: {status['positions']}")
 
 if __name__ == "__main__":

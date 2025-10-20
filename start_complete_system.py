@@ -156,23 +156,30 @@ async def start_live_trading():
                     """Get klines with proper data format and historical fallback"""
                     import time
                     import numpy as np  # Import here to avoid global issues
+                    import logging
+                    logger = logging.getLogger(__name__)
 
                     # Try to load from local historical data first
                     try:
                         historical_data = self._load_historical_data(symbol)
-                        if historical_data and len(historical_data) >= limit:
-                            # Use recent historical data
-                            recent_data = historical_data.tail(limit).values.tolist()
-                            # Convert to expected format (timestamp, open, high, low, close, volume, etc.)
+                        if historical_data is not None and len(historical_data) >= limit:
+                            # Use recent historical data - it's already OHLC format
+                            recent_data = historical_data.tail(limit)
                             formatted_klines = []
-                            for row in recent_data:
-                                # Assuming historical data format: timestamp, open, high, low, close, volume
-                                timestamp = int(row[0]) if len(row) > 0 else int(time.time() * 1000)
-                                open_price = float(row[1]) if len(row) > 1 and row[1] else 50000.0 if 'BTC' in symbol else 3000.0
-                                high_price = float(row[2]) if len(row) > 2 and row[2] else open_price * 1.001
-                                low_price = float(row[3]) if len(row) > 3 and row[3] else open_price * 0.999
-                                close_price = float(row[4]) if len(row) > 4 and row[4] else open_price
-                                volume = float(row[5]) if len(row) > 5 and row[5] else 1000.0
+
+                            for idx, row in recent_data.iterrows():
+                                # Convert index (timestamp) to milliseconds
+                                if hasattr(idx, 'timestamp'):
+                                    timestamp = int(idx.timestamp() * 1000)
+                                else:
+                                    timestamp = int(time.time() * 1000)
+
+                                # Extract OHLC values
+                                open_price = float(row['open'])
+                                high_price = float(row['high'])
+                                low_price = float(row['low'])
+                                close_price = float(row['close'])
+                                volume = float(row.get('volume', 1000.0))
 
                                 formatted_klines.append([
                                     timestamp,  # timestamp
@@ -189,7 +196,7 @@ async def start_live_trading():
                                     "0"  # ignore
                                 ])
 
-                            logger.info(f"Using {len(formatted_klines)} historical klines for {symbol}")
+                            print(f"[DEBUG] Formatted {len(formatted_klines)} historical klines for {symbol}")
                             return formatted_klines
                     except Exception as e:
                         logger.warning(f"Failed to load historical data for {symbol}: {e}")
@@ -237,11 +244,14 @@ async def start_live_trading():
                     return klines
 
                 def _load_historical_data(self, symbol):
-                    """Load historical data from local files"""
-                    try:
-                        import pandas as pd
-                        import os
+                    """Load historical data from local files and convert to OHLC format"""
+                    import pandas as pd
+                    import os
+                    import numpy as np
+                    import logging
+                    logger = logging.getLogger(__name__)
 
+                    try:
                         # Map symbols to file names
                         symbol_map = {
                             'BTCUSDT': 'btc',
@@ -262,13 +272,85 @@ async def start_live_trading():
                         for path in data_paths:
                             if os.path.exists(path):
                                 df = pd.read_parquet(path)
-                                if not df.empty and len(df) > 100:  # Ensure we have enough data
-                                    logger.info(f"Loaded {len(df)} rows of historical data from {path}")
-                                    return df
+                                if not df.empty and len(df) > 50:  # Ensure we have enough data
+                                    print(f"[DEBUG] Loaded {len(df)} rows from {path}")
+
+                                    # Convert to OHLC format
+                                    df_ohlc = self._convert_to_ohlc(df)
+                                    if df_ohlc is not None and not df_ohlc.empty:
+                                        print(f"[DEBUG] Converted to OHLC: {len(df_ohlc)} rows")
+                                        return df_ohlc
                     except Exception as e:
-                        logger.warning(f"Failed to load historical data for {symbol}: {e}")
+                        print(f"[DEBUG] Failed to load historical data for {symbol}: {e}")
 
                     return None
+
+                def _convert_to_ohlc(self, df):
+                    """Convert price data to OHLC format for candlestick charts"""
+                    import pandas as pd
+                    import numpy as np
+                    import logging
+                    logger = logging.getLogger(__name__)
+
+                    try:
+                        # Ensure we have timestamp and price columns
+                        if 'timestamp' not in df.columns or 'price' not in df.columns:
+                            print(f"[DEBUG] Missing required columns. Has: {list(df.columns)}")
+                            return None
+
+                        # Make a copy to avoid modifying original
+                        df = df.copy()
+
+                        # Convert timestamp to datetime if needed
+                        if not pd.api.types.is_datetime64_any_dtype(df['timestamp']):
+                            df['timestamp'] = pd.to_datetime(df['timestamp'])
+
+                        # Set timestamp as index if not already
+                        if df.index.name != 'timestamp':
+                            df = df.set_index('timestamp')
+
+                        # Sort by timestamp
+                        df = df.sort_index()
+
+                        # Generate OHLC from price data (simplified)
+                        # In real trading, this would be actual tick-by-tick data
+                        df_ohlc = pd.DataFrame(index=df.index)
+                        df_ohlc['close'] = df['price'].astype(float)
+
+                        # Generate realistic OHLC from close prices
+                        np.random.seed(42)  # For reproducible results
+
+                        # High/Low as percentage variation from close
+                        volatility = 0.01  # 1% daily volatility
+                        df_ohlc['high'] = df_ohlc['close'] * (1 + np.random.uniform(0, volatility, len(df_ohlc)))
+                        df_ohlc['low'] = df_ohlc['close'] * (1 - np.random.uniform(0, volatility, len(df_ohlc)))
+
+                        # Open as previous close or slight variation
+                        df_ohlc['open'] = df_ohlc['close'].shift(1)
+                        mask = df_ohlc['open'].isna()
+                        if mask.any():
+                            df_ohlc.loc[mask, 'open'] = df_ohlc.loc[mask, 'close'] * (1 + np.random.uniform(-0.005, 0.005, mask.sum()))
+
+                        # Volume data (use existing or generate)
+                        if 'volume' in df.columns and df['volume'].notna().any():
+                            df_ohlc['volume'] = df['volume'].astype(float)
+                        else:
+                            # Generate realistic volume based on price level
+                            base_volume = 1000000.0 if 'BTC' in symbol.upper() else 100000.0
+                            df_ohlc['volume'] = base_volume * (1 + np.random.uniform(-0.5, 0.5, len(df_ohlc)))
+
+                        # Ensure high >= max(open, close) and low <= min(open, close)
+                        df_ohlc['high'] = df_ohlc[['high', 'open', 'close']].max(axis=1)
+                        df_ohlc['low'] = df_ohlc[['low', 'open', 'close']].min(axis=1)
+
+                        print(f"[DEBUG] OHLC conversion successful: {len(df_ohlc)} rows, columns: {list(df_ohlc.columns)}")
+                        return df_ohlc[['open', 'high', 'low', 'close', 'volume']]
+
+                    except Exception as e:
+                        print(f"[DEBUG] Failed to convert to OHLC format: {e}")
+                        import traceback
+                        traceback.print_exc()
+                        return None
 
             aster_client = MockAsterClient()
             config.dry_run = True
