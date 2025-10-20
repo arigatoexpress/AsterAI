@@ -86,21 +86,38 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class TradingConfig:
-    """Configuration for live trading"""
-    initial_capital: float = 100.0
-    max_leverage: float = 3.0
-    position_size_pct: float = 0.02  # 2% per trade
-    stop_loss_pct: float = 0.02  # 2% stop loss
-    take_profit_pct: float = 0.04  # 4% take profit
-    daily_loss_limit_pct: float = 0.10  # 10% daily loss limit
-    max_positions: int = 3
+    """Configuration for conservative live trading"""
+    initial_capital: float = 100.0  # Start with $100
+    max_leverage: float = 2.0  # Conservative 2x max (was 3x)
+    position_size_pct: float = 0.015  # 1.5% per trade (was 2%)
+    stop_loss_pct: float = 0.015  # 1.5% stop loss (tighter)
+    take_profit_pct: float = 0.03  # 3% take profit (2:1 reward:risk)
+    daily_loss_limit_pct: float = 0.05  # 5% daily loss limit (was 10%)
+    max_positions: int = 2  # Max 2 concurrent positions (was 3)
+    max_daily_trades: int = 10  # Max 10 trades per day
     trading_pairs: List[str] = None
+    
+    # Conservative mode flags
+    conservative_mode: bool = True
+    require_high_confidence: bool = True  # Only trade with >0.75 confidence
+    min_signal_strength: float = 0.7
+    
+    # Emergency controls
     emergency_stop: bool = False
+    pause_on_loss_streak: int = 3  # Pause after 3 losses in a row
     dry_run: bool = False  # simulate orders without hitting exchange
     
     def __post_init__(self):
+        """Enforce conservative limits and set defaults"""
         if self.trading_pairs is None:
             self.trading_pairs = ["BTCUSDT", "ETHUSDT"]
+        
+        if self.conservative_mode:
+            # Hard caps for safety
+            self.max_leverage = min(self.max_leverage, 2.0)
+            self.position_size_pct = min(self.position_size_pct, 0.02)
+            self.daily_loss_limit_pct = min(self.daily_loss_limit_pct, 0.05)
+            self.max_positions = min(self.max_positions, 2)
 
 @dataclass
 class Position:
@@ -135,6 +152,102 @@ class TradingMetrics:
         if self.last_updated is None:
             self.last_updated = datetime.now()
 
+class DailyLossCircuitBreaker:
+    """Automatic trading halt on daily loss limit - Critical safety feature"""
+    
+    def __init__(self, config: TradingConfig):
+        self.config = config
+        self.daily_start_balance = 0.0
+        self.current_balance = 0.0
+        self.is_halted = False
+        self.halt_reason = ""
+        self.last_reset = datetime.now().date()
+        logger.info(f"[SAFETY] Circuit breaker initialized - Daily loss limit: {config.daily_loss_limit_pct:.1%}")
+    
+    def reset_daily(self, current_balance: float):
+        """Reset daily tracking at day boundary"""
+        today = datetime.now().date()
+        if today != self.last_reset:
+            self.daily_start_balance = current_balance
+            self.current_balance = current_balance
+            self.is_halted = False
+            self.halt_reason = ""
+            self.last_reset = today
+            logger.info(f"[RESET] Daily circuit breaker reset - Starting balance: ${current_balance:.2f}")
+    
+    def update_balance(self, new_balance: float) -> bool:
+        """
+        Update balance and check if circuit breaker should trip
+        Returns True if trading can continue, False if halted
+        """
+        self.current_balance = new_balance
+        
+        if self.is_halted:
+            return False  # Already halted, no trading allowed
+        
+        # Calculate daily loss percentage
+        daily_loss = self.daily_start_balance - new_balance
+        daily_loss_pct = daily_loss / self.daily_start_balance if self.daily_start_balance > 0 else 0
+        
+        # Check if limit exceeded
+        if daily_loss_pct >= self.config.daily_loss_limit_pct:
+            self.is_halted = True
+            self.halt_reason = f"Daily loss limit reached: -{daily_loss_pct:.1%} (limit: {self.config.daily_loss_limit_pct:.1%})"
+            logger.error(f"[CIRCUIT BREAKER TRIPPED] {self.halt_reason}")
+            
+            # Send Telegram alert asynchronously
+            try:
+                asyncio.create_task(self._send_halt_alert())
+            except Exception as e:
+                logger.error(f"Failed to send halt alert: {e}")
+            
+            return False
+        
+        return True  # Trading can continue
+    
+    async def _send_halt_alert(self):
+        """Send Telegram alert about circuit breaker"""
+        try:
+            import telegram_bot
+            
+            alert_data = {
+                "type": "CIRCUIT_BREAKER_TRIPPED",
+                "message": self.halt_reason,
+                "timestamp": datetime.now().isoformat()
+            }
+            
+            # Load Telegram config
+            if os.path.exists("local/.telegram_config"):
+                with open("local/.telegram_config", 'r') as f:
+                    for line in f:
+                        if "TELEGRAM_BOT_TOKEN" in line:
+                            token = line.split("=")[1].strip()
+                        if "TELEGRAM_CHAT_ID" in line:
+                            chat_id = line.split("=")[1].strip()
+                
+                if token and chat_id:
+                    config = telegram_bot.TelegramConfig(
+                        bot_token=token,
+                        chat_id=chat_id
+                    )
+                    
+                    async with telegram_bot.TelegramNotifier(config) as notifier:
+                        await notifier.send_error_alert(alert_data)
+                        
+        except Exception as e:
+            logger.error(f"Failed to send Telegram alert: {e}")
+    
+    def get_status(self) -> Dict[str, Any]:
+        """Get circuit breaker status"""
+        return {
+            "is_halted": self.is_halted,
+            "halt_reason": self.halt_reason,
+            "daily_start_balance": self.daily_start_balance,
+            "current_balance": self.current_balance,
+            "daily_pnl": self.current_balance - self.daily_start_balance,
+            "daily_pnl_pct": (self.current_balance - self.daily_start_balance) / self.daily_start_balance if self.daily_start_balance > 0 else 0
+        }
+
 class LiveTradingAgent:
     """Main live trading agent for real-money trading"""
     
@@ -152,6 +265,13 @@ class LiveTradingAgent:
         self.metrics = TradingMetrics()
         self.daily_start_balance = config.initial_capital
         self.last_daily_reset = datetime.now().date()
+        
+        # Initialize circuit breaker for safety
+        self.circuit_breaker = DailyLossCircuitBreaker(config)
+        self.circuit_breaker.reset_daily(config.initial_capital)
+        
+        # Track consecutive losses for pause mechanism
+        self.consecutive_losses = 0
         
         # Initialize strategies with safe fallbacks
         class _SimpleStrategy:
@@ -215,11 +335,14 @@ class LiveTradingAgent:
             }
         }
         
-        logger.info(f"Live Trading Agent initialized with ${config.initial_capital} capital")
+        logger.info(f"[INIT] Live Trading Agent initialized")
+        logger.info(f"[CAPITAL] Starting balance: ${config.initial_capital:.2f}")
+        logger.info(f"[SAFETY] Conservative mode: {config.conservative_mode}")
+        logger.info(f"[LIMITS] Max leverage: {config.max_leverage}x, Daily loss limit: {config.daily_loss_limit_pct:.1%}")
     
     async def start_trading(self):
         """Start the live trading loop"""
-        logger.info("Starting live trading...")
+        logger.info("[START] Starting live trading...")
         self.is_trading = True
         
         try:
@@ -257,11 +380,11 @@ class LiveTradingAgent:
             logger.error(f"Error in trading loop: {e}")
             await self._emergency_shutdown()
         
-        logger.info("Live trading stopped")
+        logger.info("[STOP] Live trading stopped")
     
     async def stop_trading(self):
         """Stop the live trading loop"""
-        logger.info("Stopping live trading...")
+        logger.info("[STOP] Stopping live trading...")
         self.is_trading = False
         
         # Close all positions
@@ -269,7 +392,7 @@ class LiveTradingAgent:
     
     async def emergency_stop_trading(self):
         """Emergency stop - immediately close all positions"""
-        logger.critical("EMERGENCY STOP ACTIVATED")
+        logger.critical("[EMERGENCY] EMERGENCY STOP ACTIVATED")
         self.emergency_stop = True
         self.is_trading = False
         
@@ -277,14 +400,14 @@ class LiveTradingAgent:
         await self._close_all_positions()
         
         # Log emergency stop
-        logger.critical("All positions closed due to emergency stop")
+        logger.critical("[EMERGENCY] All positions closed due to emergency stop")
     
     async def _check_daily_reset(self):
         """Check if daily reset is needed"""
         current_date = datetime.now().date()
         
         if current_date != self.last_daily_reset:
-            logger.info("Daily reset - updating metrics and balance")
+            logger.info("[RESET] Daily reset - updating metrics and balance")
             
             # Reset daily metrics
             self.metrics.daily_pnl = 0.0

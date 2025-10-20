@@ -29,6 +29,7 @@ try:
     import plotly.graph_objects as go
     from plotly.utils import PlotlyJSONEncoder
     from realtime_price_fetcher import RealTimePriceFetcher
+    from trading_control_center import control_center
 except ImportError as e:
     print(f"❌ Missing required packages: {e}")
     print("Please install with: pip install flask flask-socketio psutil plotly aiohttp yfinance")
@@ -155,8 +156,8 @@ def _compute_indicators(df: pd.DataFrame) -> Dict[str, Any]:
     if df is None or df.empty:
         return out
     close = df['close'].astype(float)
-    out['sma20'] = close.rolling(20).mean().fillna(method='bfill').tolist()
-    out['sma50'] = close.rolling(50).mean().fillna(method='bfill').tolist()
+    out['sma20'] = close.rolling(20).mean().bfill().tolist()
+    out['sma50'] = close.rolling(50).mean().bfill().tolist()
     # RSI
     delta = close.diff()
     up = delta.clip(lower=0)
@@ -165,7 +166,7 @@ def _compute_indicators(df: pd.DataFrame) -> Dict[str, Any]:
     roll_down = down.rolling(14).mean()
     rs = roll_up / (roll_down.replace(0, np.nan))
     rsi = 100 - (100 / (1 + rs))
-    rsi = rsi.fillna(method='bfill').fillna(50)
+    rsi = rsi.bfill().fillna(50)
     out['rsi14'] = rsi.tolist()
     return out
 
@@ -493,9 +494,69 @@ HTML_TEMPLATE = """
         <!-- Trading Panel Page -->
         <div id="trading" class="page">
             <div class="card">
-                <h3>🎮 Manual Trading Controls</h3>
-                <p class="status-warning">Manual trading controls coming soon...</p>
-                <p>Currently running in autonomous mode with AI decision making.</p>
+                <h3>🎮 Bot Control Center</h3>
+                <div class="grid" style="grid-template-columns: repeat(3, 1fr);">
+                    <div class="metric glow">
+                        <div class="metric-label">Bot Status</div>
+                        <div class="metric-value" id="botStatus" style="font-size: 1.2rem;">STANDBY</div>
+                        <button class="nav-btn" onclick="startBot()" id="startBtn" style="margin-top: 0.5rem;">▶ START</button>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Trading Mode</div>
+                        <div class="metric-value" id="tradingMode" style="font-size: 1rem;">DRY-RUN</div>
+                        <button class="nav-btn" onclick="toggleMode()" style="margin-top: 0.5rem;">🔄 TOGGLE</button>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Emergency</div>
+                        <div class="metric-value" style="font-size: 1rem;">ARMED</div>
+                        <button class="nav-btn" onclick="emergencyStop()" style="margin-top: 0.5rem; background: rgba(255,0,0,0.3); border-color: #ff0000;">🚨 STOP</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>⚙️ Configuration Panel</h3>
+                <div class="grid" style="grid-template-columns: repeat(2, 1fr);">
+                    <div>
+                        <label>Position Size (%)</label>
+                        <input type="range" id="positionSize" min="1" max="10" value="2" oninput="updateConfigDisplay()" style="width: 100%; margin: 0.5rem 0;">
+                        <div id="positionSizeVal">2%</div>
+                    </div>
+                    <div>
+                        <label>Stop Loss (%)</label>
+                        <input type="range" id="stopLoss" min="1" max="10" value="2" oninput="updateConfigDisplay()" style="width: 100%; margin: 0.5rem 0;">
+                        <div id="stopLossVal">2%</div>
+                    </div>
+                    <div>
+                        <label>Take Profit (%)</label>
+                        <input type="range" id="takeProfit" min="2" max="20" value="4" oninput="updateConfigDisplay()" style="width: 100%; margin: 0.5rem 0;">
+                        <div id="takeProfitVal">4%</div>
+                    </div>
+                    <div>
+                        <label>Max Positions</label>
+                        <input type="range" id="maxPositions" min="1" max="5" value="2" oninput="updateConfigDisplay()" style="width: 100%; margin: 0.5rem 0;">
+                        <div id="maxPositionsVal">2</div>
+                    </div>
+                </div>
+                <button class="nav-btn" onclick="saveConfig()" style="margin-top: 1rem; width: 100%;">💾 SAVE CONFIGURATION</button>
+            </div>
+
+            <div class="card">
+                <h3>📈 Manual Trade Execution</h3>
+                <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                    <select id="manualSymbol" style="flex: 1; padding: 0.5rem; background: rgba(0,255,0,0.1); border: 1px solid #00ff00; color: #00ff00;">
+                        <option value="BTCUSDT">BTC/USDT</option>
+                        <option value="ETHUSDT">ETH/USDT</option>
+                        <option value="SOLUSDT">SOL/USDT</option>
+                        <option value="ADAUSDT">ADA/USDT</option>
+                    </select>
+                    <input type="number" id="manualAmount" placeholder="Amount ($)" style="flex: 1; padding: 0.5rem; background: rgba(0,255,0,0.1); border: 1px solid #00ff00; color: #00ff00;" value="2.00">
+                </div>
+                <div style="display: flex; gap: 1rem;">
+                    <button class="nav-btn" onclick="placeManualTrade('BUY')" style="flex: 1; background: rgba(0,255,0,0.2);">📈 BUY</button>
+                    <button class="nav-btn" onclick="placeManualTrade('SELL')" style="flex: 1; background: rgba(255,0,0,0.2); border-color: #ff0000;">📉 SELL</button>
+                </div>
+                <div id="tradeStatus" style="margin-top: 1rem; padding: 0.5rem; background: rgba(0,255,0,0.1); border: 1px solid #00ff00; display: none;"></div>
             </div>
 
             <div class="card">
@@ -519,6 +580,13 @@ HTML_TEMPLATE = """
                             <div class="metric-label">Max Drawdown</div>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>📜 Recent Trades</h3>
+                <div id="recentTradesList" style="max-height: 300px; overflow-y: auto;">
+                    <p class="status-warning">No trades executed yet</p>
                 </div>
             </div>
         </div>
@@ -811,6 +879,208 @@ HTML_TEMPLATE = """
 
         // Auto-load on startup
         loadMergedData();
+
+        // Bot Control Functions
+        async function startBot() {
+            try {
+                const response = await fetch('/api/control/start', {method: 'POST'});
+                const result = await response.json();
+                if (result.status === 'success') {
+                    document.getElementById('botStatus').textContent = 'RUNNING';
+                    document.getElementById('botStatus').className = 'metric-value status-good';
+                    document.getElementById('startBtn').textContent = '⏸ PAUSE';
+                    document.getElementById('startBtn').onclick = stopBot;
+                    showNotification('✅ Trading bot started', 'success');
+                } else {
+                    showNotification('❌ ' + result.message, 'error');
+                }
+            } catch (err) {
+                showNotification('❌ Failed to start bot', 'error');
+            }
+        }
+
+        async function stopBot() {
+            try {
+                const response = await fetch('/api/control/stop', {method: 'POST'});
+                const result = await response.json();
+                if (result.status === 'success') {
+                    document.getElementById('botStatus').textContent = 'STANDBY';
+                    document.getElementById('botStatus').className = 'metric-value status-warning';
+                    document.getElementById('startBtn').textContent = '▶ START';
+                    document.getElementById('startBtn').onclick = startBot;
+                    showNotification('⏹ Trading bot stopped', 'warning');
+                } else {
+                    showNotification('❌ ' + result.message, 'error');
+                }
+            } catch (err) {
+                showNotification('❌ Failed to stop bot', 'error');
+            }
+        }
+
+        async function emergencyStop() {
+            if (!confirm('⚠️ EMERGENCY STOP will close all positions immediately. Continue?')) return;
+            try {
+                const response = await fetch('/api/control/emergency-stop', {method: 'POST'});
+                const result = await response.json();
+                if (result.status === 'success') {
+                    document.getElementById('botStatus').textContent = 'EMERGENCY STOP';
+                    document.getElementById('botStatus').className = 'metric-value status-error';
+                    showNotification('🚨 EMERGENCY STOP EXECUTED', 'error');
+                } else {
+                    showNotification('❌ ' + result.message, 'error');
+                }
+            } catch (err) {
+                showNotification('❌ Emergency stop failed', 'error');
+            }
+        }
+
+        function updateConfigDisplay() {
+            document.getElementById('positionSizeVal').textContent = document.getElementById('positionSize').value + '%';
+            document.getElementById('stopLossVal').textContent = document.getElementById('stopLoss').value + '%';
+            document.getElementById('takeProfitVal').textContent = document.getElementById('takeProfit').value + '%';
+            document.getElementById('maxPositionsVal').textContent = document.getElementById('maxPositions').value;
+        }
+
+        async function saveConfig() {
+            const config = {
+                position_size_pct: parseInt(document.getElementById('positionSize').value) / 100,
+                stop_loss_pct: parseInt(document.getElementById('stopLoss').value) / 100,
+                take_profit_pct: parseInt(document.getElementById('takeProfit').value) / 100,
+                max_positions: parseInt(document.getElementById('maxPositions').value)
+            };
+
+            try {
+                const response = await fetch('/api/control/config', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(config)
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    showNotification('✅ Configuration saved', 'success');
+                } else {
+                    showNotification('❌ ' + result.message, 'error');
+                }
+            } catch (err) {
+                showNotification('❌ Failed to save configuration', 'error');
+            }
+        }
+
+        async function placeManualTrade(side) {
+            const symbol = document.getElementById('manualSymbol').value;
+            const amount = parseFloat(document.getElementById('manualAmount').value);
+
+            if (!amount || amount <= 0) {
+                showNotification('❌ Invalid amount', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/trade/manual', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({symbol, side, amount})
+                });
+                const result = await response.json();
+                
+                const statusDiv = document.getElementById('tradeStatus');
+                statusDiv.style.display = 'block';
+                
+                if (result.status === 'success') {
+                    statusDiv.innerHTML = `✅ ${side} ${amount} USD of ${symbol} - ${result.message}`;
+                    statusDiv.style.borderColor = '#00ff00';
+                    showNotification(`✅ Trade placed: ${side} ${symbol}`, 'success');
+                    loadRecentTrades();
+                } else {
+                    statusDiv.innerHTML = `❌ ${result.message}`;
+                    statusDiv.style.borderColor = '#ff0000';
+                    showNotification('❌ Trade failed', 'error');
+                }
+            } catch (err) {
+                showNotification('❌ Trade execution failed', 'error');
+            }
+        }
+
+        async function loadRecentTrades() {
+            try {
+                const response = await fetch('/api/control/status');
+                const data = await response.json();
+                const trades = data.recent_trades || [];
+                
+                const tradesList = document.getElementById('recentTradesList');
+                if (trades.length === 0) {
+                    tradesList.innerHTML = '<p class="status-warning">No trades executed yet</p>';
+                } else {
+                    tradesList.innerHTML = trades.map(trade => `
+                        <div style="padding: 0.5rem; margin: 0.5rem 0; background: rgba(0,255,0,0.1); border-left: 3px solid ${trade.side === 'BUY' ? '#00ff00' : '#ff0000'};">
+                            <strong>${trade.symbol}</strong> - ${trade.side} ${trade.amount} USD
+                            <br><small>${trade.timestamp} - ${trade.status}</small>
+                        </div>
+                    `).join('');
+                }
+            } catch (err) {
+                console.error('Failed to load recent trades:', err);
+            }
+        }
+
+        function toggleMode() {
+            const modeDiv = document.getElementById('tradingMode');
+            if (modeDiv.textContent === 'DRY-RUN') {
+                if (confirm('⚠️ Switch to LIVE mode? Real trades will be executed!')) {
+                    modeDiv.textContent = 'LIVE';
+                    modeDiv.className = 'metric-value status-error';
+                    showNotification('🔴 LIVE MODE ACTIVATED', 'error');
+                }
+            } else {
+                modeDiv.textContent = 'DRY-RUN';
+                modeDiv.className = 'metric-value status-good';
+                showNotification('✅ Dry-run mode activated', 'success');
+            }
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.textContent = message;
+            notification.style.cssText = `
+                position: fixed;
+                top: 80px;
+                right: 20px;
+                padding: 1rem 2rem;
+                background: ${type === 'success' ? 'rgba(0,255,0,0.2)' : type === 'error' ? 'rgba(255,0,0,0.2)' : 'rgba(255,255,0,0.2)'};
+                border: 2px solid ${type === 'success' ? '#00ff00' : type === 'error' ? '#ff0000' : '#ffff00'};
+                color: ${type === 'success' ? '#00ff00' : type === 'error' ? '#ff0000' : '#ffff00'};
+                border-radius: 5px;
+                z-index: 9999;
+                box-shadow: 0 0 20px ${type === 'success' ? '#00ff00' : type === 'error' ? '#ff0000' : '#ffff00'};
+                font-family: 'Courier New', monospace;
+            `;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+        }
+
+        // WebSocket listeners for control updates
+        socket.on('bot_status_change', function(data) {
+            if (data.trading_active) {
+                document.getElementById('botStatus').textContent = 'RUNNING';
+                document.getElementById('botStatus').className = 'metric-value status-good';
+            } else {
+                document.getElementById('botStatus').textContent = data.emergency ? 'EMERGENCY STOP' : 'STANDBY';
+                document.getElementById('botStatus').className = 'metric-value status-' + (data.emergency ? 'error' : 'warning');
+            }
+        });
+
+        socket.on('trade_executed', function(trade) {
+            showNotification(`📊 Trade executed: ${trade.side} ${trade.symbol}`, 'success');
+            loadRecentTrades();
+        });
+
+        socket.on('config_updated', function(config) {
+            showNotification('⚙️ Configuration updated', 'success');
+        });
+
+        // Load recent trades on page load
+        loadRecentTrades();
+        setInterval(loadRecentTrades, 10000);  // Refresh every 10 seconds
     </script>
 </body>
 </html>
@@ -856,6 +1126,58 @@ def api_indicators():
     alerts = _generate_alerts(merged, indicators)
     explanation = _explain_market(merged, indicators, symbol)
     return jsonify({'symbol': symbol, 'indicators': indicators, 'alerts': alerts, 'explanation': explanation})
+
+@app.route('/api/control/start', methods=['POST'])
+async def api_start_trading():
+    """Start the trading bot"""
+    result = await control_center.start_trading()
+    socketio.emit('bot_status_change', {'trading_active': control_center.trading_active})
+    return jsonify(result)
+
+@app.route('/api/control/stop', methods=['POST'])
+async def api_stop_trading():
+    """Stop the trading bot"""
+    result = await control_center.stop_trading()
+    socketio.emit('bot_status_change', {'trading_active': control_center.trading_active})
+    return jsonify(result)
+
+@app.route('/api/control/emergency-stop', methods=['POST'])
+async def api_emergency_stop():
+    """Emergency stop all trading"""
+    result = await control_center.emergency_stop()
+    socketio.emit('bot_status_change', {'trading_active': False, 'emergency': True})
+    return jsonify(result)
+
+@app.route('/api/control/config', methods=['GET', 'POST'])
+async def api_bot_config():
+    """Get or update bot configuration"""
+    if request.method == 'POST':
+        new_config = request.json
+        result = await control_center.update_config(new_config)
+        socketio.emit('config_updated', result.get('config', {}))
+        return jsonify(result)
+    else:
+        return jsonify({'config': control_center.bot_config})
+
+@app.route('/api/control/status')
+def api_control_status():
+    """Get complete control center status"""
+    return jsonify(control_center.get_status())
+
+@app.route('/api/trade/manual', methods=['POST'])
+async def api_manual_trade():
+    """Place a manual trade"""
+    data = request.json
+    symbol = data.get('symbol')
+    side = data.get('side')
+    amount = data.get('amount')
+    
+    if not all([symbol, side, amount]):
+        return jsonify({'status': 'error', 'message': 'Missing required parameters'})
+    
+    result = await control_center.place_manual_trade(symbol, side, float(amount))
+    socketio.emit('trade_executed', result.get('trade', {}))
+    return jsonify(result)
 
 @app.route('/api/system-status')
 def get_system_status():

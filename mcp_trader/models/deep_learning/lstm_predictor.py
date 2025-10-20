@@ -86,6 +86,17 @@ class LSTMPredictor(nn.Module):
     def __init__(self, config: LSTMConfig):
         super(LSTMPredictor, self).__init__()
         self.config = config
+        
+        # Device selection with CPU fallback for stability
+        use_cpu = os.getenv('ASTERAI_FORCE_CPU', '1') == '1'  # Default to CPU
+        enable_gpu = os.getenv('ASTERAI_ENABLE_GPU', '0') == '1'
+        
+        if enable_gpu and torch.cuda.is_available():
+            self.device = torch.device('cuda')
+            logger.info("LSTM using GPU acceleration")
+        else:
+            self.device = torch.device('cpu')
+            logger.info("LSTM using CPU (for stability and compatibility)")
 
         # LSTM layers
         self.lstm = nn.LSTM(
@@ -95,30 +106,30 @@ class LSTMPredictor(nn.Module):
             dropout=config.dropout if config.num_layers > 1 else 0,
             bidirectional=config.bidirectional,
             batch_first=True
-        )
+        ).to(self.device)
 
         # Adjust hidden size for bidirectional
         lstm_output_size = config.hidden_size * 2 if config.bidirectional else config.hidden_size
 
         # Attention mechanism
-        self.attention = AttentionMechanism(lstm_output_size) if config.attention else None
+        self.attention = AttentionMechanism(lstm_output_size).to(self.device) if config.attention else None
 
         # Output layers
         self.dropout = nn.Dropout(config.dropout)
-        self.fc1 = nn.Linear(lstm_output_size, 64)
-        self.fc2 = nn.Linear(64, config.output_size)
+        self.fc1 = nn.Linear(lstm_output_size, 64).to(self.device)
+        self.fc2 = nn.Linear(64, config.output_size).to(self.device)
 
         # Uncertainty estimation (variance prediction)
-        self.uncertainty_head = nn.Linear(lstm_output_size, config.output_size)
+        self.uncertainty_head = nn.Linear(lstm_output_size, config.output_size).to(self.device)
 
         # Multi-step forecasting head
         if config.forecast_horizon > 1:
-            self.multi_step_head = nn.Linear(lstm_output_size, config.forecast_horizon)
+            self.multi_step_head = nn.Linear(lstm_output_size, config.forecast_horizon).to(self.device)
         else:
             self.multi_step_head = None
 
         # Batch normalization
-        self.batch_norm = nn.BatchNorm1d(lstm_output_size)
+        self.batch_norm = nn.BatchNorm1d(lstm_output_size).to(self.device)
 
         # Initialize weights
         self._initialize_weights()
@@ -242,10 +253,8 @@ class LSTMPredictorModel(BaseMLModel):
         self.best_loss = float('inf')
         self.patience_counter = 0
 
-        # Device selection (force CPU in tests if ASTERAi_TEST_CPU=1)
-        use_cpu = os.getenv('ASTERAi_TEST_CPU', '0') == '1'
-        self.device = torch.device('cpu' if use_cpu or not torch.cuda.is_available() else 'cuda')
-        self.model.to(self.device)
+        # Use device from model (already set in LSTMPredictor.__init__)
+        self.device = self.model.device
 
     def prepare_features(self, data: pd.DataFrame) -> np.ndarray:
         """

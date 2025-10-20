@@ -792,6 +792,127 @@
             to { transform: rotate(360deg); }
         }
 
+        /* Architecture Console Styles */
+        .service-card {
+            background: var(--dark-light);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .service-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .service-header h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--white);
+        }
+
+        .service-details p {
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--gray-light);
+        }
+
+        .service-details a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .service-details a:hover {
+            text-decoration: underline;
+        }
+
+        .metric-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .metric-item:last-child {
+            border-bottom: none;
+        }
+
+        .metric-label {
+            font-size: 0.875rem;
+            color: var(--gray-light);
+        }
+
+        .metric-value {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--white);
+        }
+
+        .architecture-card {
+            background: var(--dark-light);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .architecture-card h4 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--white);
+            margin-bottom: 1rem;
+        }
+
+        .architecture-card p {
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--gray-light);
+        }
+
+        .features ul {
+            margin-top: 0.5rem;
+            padding-left: 1.5rem;
+        }
+
+        .features li {
+            margin-bottom: 0.25rem;
+            font-size: 0.875rem;
+            color: var(--gray-light);
+        }
+
+        .data-flow-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .data-flow-item:last-child {
+            border-bottom: none;
+        }
+
+        .flow-arrow {
+            font-size: 1.5rem;
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .flow-text {
+            font-size: 0.875rem;
+            color: var(--gray-light);
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+
         @keyframes slideIn {
             from {
                 transform: translateX(100%);
@@ -825,6 +946,7 @@
                 </div>
                 <nav class="nav">
                     <a href="#dashboard" class="active">Dashboard</a>
+                    <a href="#architecture">Architecture</a>
                     <a href="#trading">Trading</a>
                     <a href="#analytics">Analytics</a>
                     <a href="#settings">Settings</a>
@@ -837,7 +959,7 @@
         </div>
     </header>
 
-    <main class="main">
+    <main class="main" id="dashboard-section">
         <div class="container">
             <div class="hero">
                 <h1>AI Trading Platform</h1>
@@ -1288,6 +1410,98 @@
         </div>
     </main>
 
+    <!-- Architecture Console (Initially Hidden) -->
+    <main class="main" id="architecture-section" style="display: none;">
+        <div class="container">
+            <div class="hero">
+                <h1>System Architecture Console</h1>
+                <p>Comprehensive overview of all system components, data flow, and operational status</p>
+            </div>
+
+            <!-- Architecture Overview -->
+            <div class="dashboard-grid">
+                <!-- System Services Status -->
+                <div class="card" style="grid-column: span 2;">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="card-icon primary">
+                                <i class="fas fa-server"></i>
+                            </div>
+                            System Services
+                        </div>
+                        <div class="status-indicator">
+                            <div class="status-dot healthy"></div>
+                            <span>All Systems Operational</span>
+                        </div>
+                    </div>
+                    <div class="services-grid" id="services-grid">
+                        <!-- Services will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- System Metrics -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="card-icon success">
+                                <i class="fas fa-chart-bar"></i>
+                            </div>
+                            System Metrics
+                        </div>
+                    </div>
+                    <div class="metrics-list" id="system-metrics">
+                        <!-- Metrics will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Trading Metrics -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="card-icon warning">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            Trading Status
+                        </div>
+                    </div>
+                    <div class="metrics-list" id="trading-metrics">
+                        <!-- Trading metrics will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Architecture Components -->
+                <div class="card" style="grid-column: span 2;">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="card-icon primary">
+                                <i class="fas fa-sitemap"></i>
+                            </div>
+                            Architecture Overview
+                        </div>
+                    </div>
+                    <div class="architecture-flow" id="architecture-flow">
+                        <!-- Architecture will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Data Flow Diagram -->
+                <div class="card" style="grid-column: span 2;">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="card-icon success">
+                                <i class="fas fa-project-diagram"></i>
+                            </div>
+                            Data Flow
+                        </div>
+                    </div>
+                    <div class="data-flow-container" id="data-flow-container">
+                        <!-- Data flow will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
     <script>
         // Configuration
         const BOT_URL = 'https://aster-trading-agent-880429861698.us-central1.run.app';
@@ -1446,6 +1660,134 @@
         
         // Auto-refresh every 5 seconds
         setInterval(updateDashboard, 5000);
+
+        // Architecture Console Navigation
+        document.querySelectorAll('.nav a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const section = e.target.getAttribute('href').substring(1);
+
+                // Hide all sections
+                document.getElementById('dashboard-section').style.display = 'none';
+                document.getElementById('architecture-section').style.display = 'none';
+
+                // Show selected section
+                if (section === 'dashboard') {
+                    document.getElementById('dashboard-section').style.display = 'block';
+                    e.target.classList.add('active');
+                    document.querySelector('.nav a[href="#architecture"]').classList.remove('active');
+                } else if (section === 'architecture') {
+                    document.getElementById('architecture-section').style.display = 'block';
+                    e.target.classList.add('active');
+                    document.querySelector('.nav a[href="#dashboard"]').classList.remove('active');
+                    loadArchitectureConsole();
+                }
+            });
+        });
+
+        // Architecture Console Functions
+        async function loadArchitectureConsole() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/system/summary`);
+                if (response.ok) {
+                    const data = await response.json();
+                    populateArchitectureData(data);
+                } else {
+                    console.error('Failed to load architecture data');
+                }
+            } catch (error) {
+                console.error('Architecture console error:', error);
+            }
+        }
+
+        function populateArchitectureData(data) {
+            // Populate services
+            const servicesGrid = document.getElementById('services-grid');
+            servicesGrid.innerHTML = '';
+
+            Object.entries(data.services).forEach(([name, service]) => {
+                const serviceCard = document.createElement('div');
+                serviceCard.className = 'service-card';
+                serviceCard.innerHTML = `
+                    <div class="service-header">
+                        <h4>${name.replace('_', ' ').toUpperCase()}</h4>
+                        <div class="status-indicator">
+                            <div class="status-dot ${service.status === 'healthy' ? 'healthy' : 'error'}"></div>
+                            <span>${service.status}</span>
+                        </div>
+                    </div>
+                    <div class="service-details">
+                        <p><strong>URL:</strong> <a href="${service.url}" target="_blank">${service.url}</a></p>
+                        <p><strong>Version:</strong> ${service.version}</p>
+                        <p><strong>Status:</strong> ${service.running ? 'Running' : 'Stopped'}</p>
+                    </div>
+                `;
+                servicesGrid.appendChild(serviceCard);
+            });
+
+            // Populate system metrics
+            const systemMetrics = document.getElementById('system-metrics');
+            systemMetrics.innerHTML = '';
+
+            Object.entries(data.system_metrics).forEach(([key, value]) => {
+                const metric = document.createElement('div');
+                metric.className = 'metric-item';
+                metric.innerHTML = `
+                    <div class="metric-label">${key.replace('_', ' ').toUpperCase()}</div>
+                    <div class="metric-value">${value}</div>
+                `;
+                systemMetrics.appendChild(metric);
+            });
+
+            // Populate trading metrics
+            const tradingMetrics = document.getElementById('trading-metrics');
+            tradingMetrics.innerHTML = '';
+
+            Object.entries(data.trading_metrics).forEach(([key, value]) => {
+                const metric = document.createElement('div');
+                metric.className = 'metric-item';
+                metric.innerHTML = `
+                    <div class="metric-label">${key.replace('_', ' ').toUpperCase()}</div>
+                    <div class="metric-value">${typeof value === 'number' ? value.toFixed(2) : value}</div>
+                `;
+                tradingMetrics.appendChild(metric);
+            });
+
+            // Populate architecture components
+            const architectureFlow = document.getElementById('architecture-flow');
+            architectureFlow.innerHTML = '';
+
+            Object.entries(data.architecture).forEach(([component, details]) => {
+                const archCard = document.createElement('div');
+                archCard.className = 'architecture-card';
+                archCard.innerHTML = `
+                    <h4>${component.toUpperCase()}</h4>
+                    <p><strong>Type:</strong> ${details.type}</p>
+                    <p><strong>Language:</strong> ${details.language || 'N/A'}</p>
+                    <div class="features">
+                        <strong>Features:</strong>
+                        <ul>
+                            ${details.features.map(feature => `<li>${feature}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+                architectureFlow.appendChild(archCard);
+            });
+
+            // Populate data flow
+            const dataFlowContainer = document.getElementById('data-flow-container');
+            dataFlowContainer.innerHTML = '';
+
+            data.data_flow.forEach(flow => {
+                const flowItem = document.createElement('div');
+                flowItem.className = 'data-flow-item';
+                flowItem.innerHTML = `
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-text">${flow}</div>
+                `;
+                dataFlowContainer.appendChild(flowItem);
+            });
+        }
 
         // Chart controls
         document.querySelectorAll('.chart-controls .btn').forEach(btn => {

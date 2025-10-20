@@ -65,9 +65,9 @@ class FundingArbitrageStrategy:
         self.trade_count = 0
         self.winning_trades = 0
         
-        logger.info("💰 Funding Rate Arbitrage Strategy initialized")
-        logger.info(f"🎯 Target: 70% win rate, 0.3-0.7% daily returns")
-        logger.info(f"⚡ Min funding rate: {config.min_funding_rate_pct:.1%}")
+        logger.info("[INIT] Funding Rate Arbitrage Strategy initialized")
+        logger.info(f"[TARGET] 70% win rate, 0.3-0.7% daily returns")
+        logger.info(f"[CONFIG] Min funding rate: {config.min_funding_rate_pct:.1%}")
     
     def calculate_net_funding_rate(self,
                                    funding_rate: float,

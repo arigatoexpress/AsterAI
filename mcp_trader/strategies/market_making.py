@@ -66,9 +66,9 @@ class MarketMakingStrategy:
         self.vpin_calculator = VPINCalculator(self.device)
         self.spread_optimizer = SpreadOptimizer(self.device)
         
-        logger.info("🎯 Market Making Strategy initialized")
-        logger.info(f"⚡ GPU: {self.device}")
-        logger.info(f"📊 Target: 65% win rate, 0.5-1% daily returns")
+        logger.info("[INIT] Market Making Strategy initialized")
+        logger.info(f"[GPU] Device: {self.device}")
+        logger.info(f"[TARGET] 65% win rate, 0.5-1% daily returns")
     
     def calculate_optimal_spread(self, 
                                  volatility: float, 

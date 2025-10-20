@@ -197,16 +197,30 @@ from datetime import datetime
 
 @dataclass
 class AsterConfig:
-    """Configuration for Aster API client."""
+    """Configuration for Aster API client with latency-aware settings."""
     api_key: str
     secret_key: str
     base_url: str = "https://fapi.asterdex.com"  # Aster Futures API base URL
     ws_url: str = "wss://fstream.asterdex.com"  # Aster WebSocket streams URL
     timeout: int = 30
-    max_retries: int = 3
+    max_retries: int = 5  # Increased for VPN/Starlink latency
     recv_window: int = 5000  # Default recvWindow for signed requests
     max_connections: int = 100  # Max connections for connector
     max_connections_per_host: int = 10  # Max connections per host
+
+    # Latency-aware configuration
+    enable_latency_monitoring: bool = True
+    adaptive_timeout: bool = True
+    base_timeout: int = 30  # Base timeout for normal conditions
+    high_latency_timeout: int = 60  # Extended timeout for high latency
+    circuit_breaker_threshold: int = 5  # Failures before circuit opens
+    circuit_breaker_timeout: int = 300  # Seconds before retrying after circuit opens
+
+    # Connection pooling for VPN/Starlink
+    enable_connection_pooling: bool = True
+    connection_pool_size: int = 20  # Larger pool for unstable connections
+    connection_keepalive_timeout: int = 60  # Keep connections alive longer
+    connection_max_requests: int = 1000  # Max requests per connection
 
 
 @dataclass
@@ -559,10 +573,16 @@ class AsterRESTClient:
 
         url = f"{self.config.base_url}{endpoint}"
 
+        # Get latency-aware timeout
+        current_timeout = self.config.timeout
+        if hasattr(self, 'client') and self.client.latency_monitor:
+            current_timeout = self.client.get_latency_aware_timeout()
+
         for attempt in range(self.config.max_retries):
+            start_time = time.time()
             try:
                 if method == 'GET':
-                    async with self.session.get(url, headers=headers, params=request_params) as response:
+                    async with self.session.get(url, headers=headers, params=request_params, timeout=current_timeout) as response:
                         try:
                             result = await response.json()
                         except Exception as json_error:
@@ -584,6 +604,19 @@ class AsterRESTClient:
                             result = None
                 
                 if response.status == 200:
+                    # Record latency for successful requests
+                    if hasattr(self, 'client') and self.client.latency_monitor:
+                        latency_ms = (time.time() - start_time) * 1000
+                        self.client.latency_monitor.record_latency(latency_ms)
+
+                        # Record circuit breaker success
+                        if 'order' in endpoint.lower():
+                            self.client.order_circuit_breaker.record_success()
+                        elif 'ticker' in endpoint.lower() or 'klines' in endpoint.lower():
+                            self.client.market_data_circuit_breaker.record_success()
+                        elif 'account' in endpoint.lower() or 'balance' in endpoint.lower():
+                            self.client.account_circuit_breaker.record_success()
+
                     if result is None:
                         logger.warning(f"Received null response for {endpoint}")
                         return {}
@@ -608,11 +641,29 @@ class AsterRESTClient:
                         raise Exception(f"API Client Error {response.status}: {error_msg}")
 
                     if attempt == self.config.max_retries - 1:
+                        # Record circuit breaker failure before raising exception
+                        if hasattr(self, 'client') and self.client:
+                            if 'order' in endpoint.lower():
+                                self.client.order_circuit_breaker.record_failure()
+                            elif 'ticker' in endpoint.lower() or 'klines' in endpoint.lower():
+                                self.client.market_data_circuit_breaker.record_failure()
+                            elif 'account' in endpoint.lower() or 'balance' in endpoint.lower():
+                                self.client.account_circuit_breaker.record_failure()
+
                         raise Exception(f"API request failed after {self.config.max_retries} attempts: {error_msg}")
-                    
+
             except Exception as e:
                 logger.error(f"Request attempt {attempt + 1} failed: {e}")
                 if attempt == self.config.max_retries - 1:
+                    # Record circuit breaker failure
+                    if hasattr(self, 'client') and self.client:
+                        if 'order' in endpoint.lower():
+                            self.client.order_circuit_breaker.record_failure()
+                        elif 'ticker' in endpoint.lower() or 'klines' in endpoint.lower():
+                            self.client.market_data_circuit_breaker.record_failure()
+                        elif 'account' in endpoint.lower() or 'balance' in endpoint.lower():
+                            self.client.account_circuit_breaker.record_failure()
+
                     raise
                 await asyncio.sleep(2 ** attempt)  # Exponential backoff
         
@@ -1931,6 +1982,83 @@ class AsterWebSocketClient:
             logger.error(f"Error in WebSocket listener: {e}")
 
 
+class CircuitBreaker:
+    """Circuit breaker pattern for handling API failures in high-latency environments."""
+
+    def __init__(self, threshold: int = 5, timeout: int = 300):
+        self.threshold = threshold
+        self.timeout = timeout
+        self.failure_count = 0
+        self.last_failure_time = None
+        self.state = "CLOSED"  # CLOSED, OPEN, HALF_OPEN
+
+    def is_open(self) -> bool:
+        """Check if circuit is open (failing requests)."""
+        if self.state == "OPEN":
+            if self.last_failure_time and time.time() - self.last_failure_time > self.timeout:
+                self.state = "HALF_OPEN"
+                return False
+            return True
+        return False
+
+    def record_success(self):
+        """Record successful request."""
+        self.failure_count = 0
+        self.state = "CLOSED"
+
+    def record_failure(self):
+        """Record failed request."""
+        self.failure_count += 1
+        self.last_failure_time = time.time()
+
+        if self.failure_count >= self.threshold:
+            self.state = "OPEN"
+            logger.warning(f"Circuit breaker OPENED after {self.failure_count} failures")
+
+
+class LatencyMonitor:
+    """Monitor and adapt to network latency conditions."""
+
+    def __init__(self):
+        self.latency_samples: List[float] = []
+        self.max_samples = 100
+        self.high_latency_threshold = 1000  # ms
+        self.current_timeout = 30
+
+    def record_latency(self, latency_ms: float):
+        """Record API call latency."""
+        self.latency_samples.append(latency_ms)
+        if len(self.latency_samples) > self.max_samples:
+            self.latency_samples.pop(0)
+
+    def get_average_latency(self) -> float:
+        """Get average latency in milliseconds."""
+        if not self.latency_samples:
+            return 0
+        return sum(self.latency_samples) / len(self.latency_samples)
+
+    def is_high_latency(self) -> bool:
+        """Check if current latency is considered high."""
+        avg_latency = self.get_average_latency()
+        return avg_latency > self.high_latency_threshold
+
+    def get_adaptive_timeout(self, base_timeout: int = 30) -> int:
+        """Get adaptive timeout based on current latency."""
+        if not self.latency_samples:
+            return base_timeout
+
+        avg_latency = self.get_average_latency()
+
+        if avg_latency > 2000:  # Very high latency
+            return base_timeout * 3
+        elif avg_latency > 1000:  # High latency
+            return base_timeout * 2
+        elif avg_latency > 500:  # Moderate latency
+            return int(base_timeout * 1.5)
+        else:
+            return base_timeout
+
+
 class AsterClient:
     """Main Aster client combining REST and WebSocket."""
     
@@ -1938,7 +2066,28 @@ class AsterClient:
         self.config = AsterConfig(api_key=api_key, secret_key=secret_key)
         self.rest_client = AsterRESTClient(self.config)
         self.ws_client = AsterWebSocketClient(self.config)
-        # Simple circuit breaker for order placement
+
+        # Latency-aware components for VPN/Starlink
+        if self.config.enable_latency_monitoring:
+            self.latency_monitor = LatencyMonitor()
+        else:
+            self.latency_monitor = None
+
+        # Circuit breakers for different operations
+        self.order_circuit_breaker = CircuitBreaker(
+            threshold=self.config.circuit_breaker_threshold,
+            timeout=self.config.circuit_breaker_timeout
+        )
+        self.market_data_circuit_breaker = CircuitBreaker(
+            threshold=self.config.circuit_breaker_threshold,
+            timeout=self.config.circuit_breaker_timeout
+        )
+        self.account_circuit_breaker = CircuitBreaker(
+            threshold=self.config.circuit_breaker_threshold,
+            timeout=self.config.circuit_breaker_timeout
+        )
+
+        # Legacy circuit breaker for backward compatibility
         self._order_cb_failures = 0
         self._order_cb_threshold = 5
         self._order_cb_cooldown_seconds = 30
@@ -1961,6 +2110,25 @@ class AsterClient:
     async def disconnect(self):
         """Disconnect from Aster DEX (legacy method)."""
         await self.__aexit__(None, None, None)
+
+    def get_latency_aware_timeout(self) -> int:
+        """Get timeout based on current latency conditions."""
+        if not self.latency_monitor or not self.config.adaptive_timeout:
+            return self.config.timeout
+
+        return self.latency_monitor.get_adaptive_timeout(self.config.base_timeout)
+
+    def get_current_latency(self) -> float:
+        """Get current average latency in milliseconds."""
+        if not self.latency_monitor:
+            return 0
+        return self.latency_monitor.get_average_latency()
+
+    def is_high_latency_detected(self) -> bool:
+        """Check if high latency conditions are detected."""
+        if not self.latency_monitor:
+            return False
+        return self.latency_monitor.is_high_latency()
     
     # Delegate REST methods
     @cache_api_response(ttl_seconds=10)  # Cache account info for 10 seconds
