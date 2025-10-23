@@ -175,6 +175,17 @@ class SecretManager:
     
     def get_aster_credentials(self) -> Dict[str, str]:
         """Get Aster API credentials."""
+        # Try GCP Secret Manager first if available
+        try:
+            from mcp_trader.config.gcp import get_aster_credentials_gcp
+            gcp_creds = get_aster_credentials_gcp()
+            if gcp_creds['api_key'] and gcp_creds['secret_key']:
+                logger.info("Using Aster credentials from GCP Secret Manager")
+                return gcp_creds
+        except Exception as e:
+            logger.warning(f"Failed to get credentials from GCP: {e}")
+
+        # Fallback to local secrets
         return {
             'api_key': self.get_secret('ASTER_API_KEY'),
             'secret_key': self.get_secret('ASTER_SECRET_KEY')

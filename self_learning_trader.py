@@ -93,7 +93,7 @@ class SelfLearningTrader:
             'losing_trades': 0,
             'total_pnl': 0.0,
             'max_drawdown': 0.0,
-            'sharpe_ratio': 0.0,
+            'sortino_ratio': 0.0,
             'win_rate': 0.0
         }
         
@@ -251,6 +251,13 @@ class SelfLearningTrader:
     def predict_market_direction(self, symbol: str) -> Tuple[float, float]:
         """Predict market direction and confidence"""
         features = self.extract_features(symbol)
+
+        # Check if scaler needs to be retrained due to feature count mismatch
+        if len(features) != self.scalers['features'].n_features_in_:
+            self.logger.warning(f"Feature count mismatch: expected {self.scalers['features'].n_features_in_}, got {len(features)}. Retraining scaler.")
+            self.scalers['features'] = StandardScaler()
+            self.scalers['features'].fit([features])
+
         features_scaled = self.scalers['features'].transform([features])
         
         # Get predictions from all models

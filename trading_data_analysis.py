@@ -142,7 +142,7 @@ class TradingDataAnalyzer:
             'total_return': (portfolio_returns + 1).prod() - 1,
             'annualized_return': portfolio_returns.mean() * 252,
             'annualized_volatility': portfolio_returns.std() * np.sqrt(252),
-            'sharpe_ratio': portfolio_returns.mean() / portfolio_returns.std() * np.sqrt(252),
+            'sortino_ratio': self._calculate_sortino_ratio(portfolio_returns),
             'max_drawdown': self._calculate_max_drawdown(portfolio_returns),
             'win_rate': (portfolio_returns > 0).mean(),
         }
@@ -156,7 +156,7 @@ class TradingDataAnalyzer:
                 'total_return': (returns + 1).prod() - 1,
                 'annualized_return': returns.mean() * 252,
                 'annualized_volatility': returns.std() * np.sqrt(252),
-                'sharpe_ratio': returns.mean() / returns.std() * np.sqrt(252) if returns.std() > 0 else 0,
+                'sortino_ratio': self._calculate_sortino_ratio(returns),
                 'max_drawdown': self._calculate_max_drawdown(returns),
                 'avg_volume': asset_data['volume'].mean(),
                 'price_range': asset_data['price'].max() - asset_data['price'].min(),
@@ -167,7 +167,7 @@ class TradingDataAnalyzer:
             'value_at_risk_95': np.percentile(portfolio_returns, 5),
             'expected_shortfall': portfolio_returns[portfolio_returns <= np.percentile(portfolio_returns, 5)].mean(),
             'beta_vs_market': self._calculate_beta(portfolio_returns, portfolio_returns),  # Self-beta for now
-            'information_ratio': results['portfolio_metrics']['sharpe_ratio'],
+            'information_ratio': results['portfolio_metrics']['sortino_ratio'],
         }
 
         # Correlation analysis
@@ -188,6 +188,28 @@ class TradingDataAnalyzer:
         running_max = cumulative.expanding().max()
         drawdown = (cumulative - running_max) / running_max
         return drawdown.min()
+
+    def _calculate_sortino_ratio(self, returns: pd.Series, risk_free_rate: float = 0.02) -> float:
+        """Calculate Sortino ratio (downside deviation focus)."""
+        if len(returns) == 0:
+            return 0.0
+
+        # Filter for negative returns only
+        negative_returns = returns[returns < 0]
+        if len(negative_returns) == 0:
+            # No downside risk - return high positive value if positive returns
+            return float('inf') if returns.mean() > 0 else 0.0
+
+        # Calculate downside deviation
+        downside_deviation = negative_returns.std() * np.sqrt(252) if len(negative_returns) > 1 else 0
+
+        if downside_deviation == 0:
+            return float('inf')
+
+        # Annualized average return
+        annualized_return = returns.mean() * 252
+
+        return (annualized_return - risk_free_rate) / downside_deviation
 
     def _calculate_beta(self, asset_returns: pd.Series, market_returns: pd.Series) -> float:
         """Calculate beta coefficient."""
@@ -436,7 +458,7 @@ class TradingDataAnalyzer:
         ax.scatter(
             portfolio_metrics['annualized_return'],
             portfolio_metrics['annualized_volatility'],
-            portfolio_metrics['sharpe_ratio'],
+            portfolio_metrics['sortino_ratio'],
             s=100, c='red', marker='o'
         )
 
@@ -446,14 +468,14 @@ class TradingDataAnalyzer:
                 ax.scatter(
                     asset_metrics['annualized_return'],
                     asset_metrics['annualized_volatility'],
-                    asset_metrics['sharpe_ratio'],
+                    asset_metrics['sortino_ratio'],
                     s=50, alpha=0.7
                 )
 
         # Customize plot
         ax.set_xlabel('Annualized Return')
         ax.set_ylabel('Annualized Volatility')
-        ax.set_zlabel('Sharpe Ratio')
+        ax.set_zlabel('Sortino Ratio')
         ax.set_title('3D Performance Analysis')
 
         plt.savefig(viz_dir / "3d_performance_surface.png", dpi=300, bbox_inches='tight')
@@ -614,7 +636,7 @@ def main():
     portfolio_metrics = results['performance_metrics']['portfolio_metrics']
     print("\nPORTFOLIO PERFORMANCE:")
     print(f"   Total Return: {portfolio_metrics['total_return']*100:.2f}%")
-    print(f"   Sharpe Ratio: {portfolio_metrics['sharpe_ratio']:.2f}")
+    print(f"   Sortino Ratio: {portfolio_metrics['sortino_ratio']:.2f}")
     print(f"   Max Drawdown: {portfolio_metrics['max_drawdown']*100:.2f}%")
 
     # Recommendations

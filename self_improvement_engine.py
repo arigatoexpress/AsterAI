@@ -49,7 +49,7 @@ class StrategyPerformance:
     avg_win: float
     avg_loss: float
     profit_factor: float
-    sharpe_ratio: float
+    sortino_ratio: float
     max_drawdown: float
     last_updated: datetime
 
@@ -72,8 +72,8 @@ class GeneticOptimizer:
         self.crossover_rate = 0.8
         self.elite_size = 5
         
-    def optimize_strategy(self, strategy_class, parameter_ranges: Dict[str, Tuple[float, float]], 
-                         historical_data: pd.DataFrame, performance_metric: str = 'sharpe_ratio') -> OptimizationResult:
+    def optimize_strategy(self, strategy_class, parameter_ranges: Dict[str, Tuple[float, float]],
+                         historical_data: pd.DataFrame, performance_metric: str = 'sortino_ratio') -> OptimizationResult:
         """Optimize strategy parameters using genetic algorithm"""
         
         logger.info(f"Starting genetic optimization for {strategy_class.__name__}")
@@ -162,11 +162,16 @@ class GeneticOptimizer:
                 return float('-inf')
             
             # Calculate performance metric
-            if performance_metric == 'sharpe_ratio':
+            if performance_metric == 'sortino_ratio':
                 returns = [trade['pnl'] for trade in trades]
                 if len(returns) < 2:
                     return float('-inf')
-                return np.mean(returns) / np.std(returns) if np.std(returns) > 0 else 0
+                # Sortino ratio: focus on downside deviation
+                negative_returns = [r for r in returns if r < 0]
+                if not negative_returns:
+                    return float('inf') if np.mean(returns) > 0 else 0.0
+                downside_deviation = np.std(negative_returns) if len(negative_returns) > 1 else 0
+                return np.mean(returns) / downside_deviation if downside_deviation > 0 else float('inf')
             elif performance_metric == 'profit_factor':
                 wins = [trade['pnl'] for trade in trades if trade['pnl'] > 0]
                 losses = [abs(trade['pnl']) for trade in trades if trade['pnl'] < 0]
@@ -456,9 +461,14 @@ class SelfImprovementEngine:
             avg_loss = abs(strategy_data[strategy_data['pnl'] < 0]['pnl'].mean()) if losing_trades > 0 else 0
             profit_factor = avg_win / avg_loss if avg_loss > 0 else float('inf')
             
-            # Calculate Sharpe ratio
+            # Calculate Sortino ratio
             returns = strategy_data['pnl'].values
-            sharpe_ratio = np.mean(returns) / np.std(returns) if np.std(returns) > 0 else 0
+            negative_returns = returns[returns < 0]
+            if len(negative_returns) == 0:
+                sortino_ratio = float('inf') if np.mean(returns) > 0 else 0.0
+            else:
+                downside_deviation = np.std(negative_returns) if len(negative_returns) > 1 else 0
+                sortino_ratio = np.mean(returns) / downside_deviation if downside_deviation > 0 else float('inf')
             
             # Calculate max drawdown
             cumulative_returns = np.cumsum(returns)
@@ -476,7 +486,7 @@ class SelfImprovementEngine:
                 avg_win=avg_win,
                 avg_loss=avg_loss,
                 profit_factor=profit_factor,
-                sharpe_ratio=sharpe_ratio,
+                sortino_ratio=sortino_ratio,
                 max_drawdown=max_drawdown,
                 last_updated=datetime.now()
             )
@@ -487,13 +497,13 @@ class SelfImprovementEngine:
         if not self.strategy_performance:
             return
         
-        # Calculate weights based on Sharpe ratio and profit factor
+        # Calculate weights based on Sortino ratio and profit factor
         weights = {}
         total_score = 0
         
         for strategy_name, performance in self.strategy_performance.items():
-            # Combined score: 70% Sharpe ratio, 30% profit factor
-            score = 0.7 * performance.sharpe_ratio + 0.3 * min(performance.profit_factor, 5.0)
+            # Combined score: 70% Sortino ratio, 30% profit factor
+            score = 0.7 * performance.sortino_ratio + 0.3 * min(performance.profit_factor, 5.0)
             weights[strategy_name] = max(score, 0.1)  # Minimum weight of 0.1
             total_score += weights[strategy_name]
         

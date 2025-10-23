@@ -250,9 +250,9 @@ class PaperTradingEngine:
 
         if not self.closed_trades:
             return {
-                'total_return_pct': 0.0,
-                'sharpe_ratio': 0.0,
-                'max_drawdown_pct': 0.0,
+                'total_return': 0.0,
+                'sortino_ratio': 0.0,
+                'max_drawdown': 0.0,
                 'win_rate': 0.0,
                 'profit_factor': 0.0,
                 'total_trades': 0,
@@ -262,16 +262,22 @@ class PaperTradingEngine:
         # Calculate returns
         total_return = (self.capital - self.config.initial_capital) / self.config.initial_capital
 
-        # Calculate Sharpe ratio (simplified)
+        # Calculate Sortino ratio (downside deviation focus)
         if self.closed_trades:
             pnls = [trade['pnl'] for trade in self.closed_trades]
             if len(pnls) > 1:
                 returns = np.array(pnls) / self.config.initial_capital
-                sharpe = np.mean(returns) / np.std(returns) * np.sqrt(252) if np.std(returns) > 0 else 0
+                negative_returns = returns[returns < 0]
+                if len(negative_returns) > 0:
+                    downside_deviation = np.std(negative_returns) * np.sqrt(252)
+                    sortino_ratio = np.mean(returns) / downside_deviation if downside_deviation > 0 else float('inf')
+                else:
+                    # No downside risk - excellent performance
+                    sortino_ratio = float('inf') if np.mean(returns) > 0 else 0.0
             else:
-                sharpe = 0
+                sortino_ratio = 0
         else:
-            sharpe = 0
+            sortino_ratio = 0
 
         # Calculate max drawdown (simplified)
         capital_history = [self.config.initial_capital]
@@ -299,9 +305,9 @@ class PaperTradingEngine:
         profit_factor = total_profits / total_losses if total_losses > 0 else 0
 
         return {
-            'total_return_pct': total_return,
-            'sharpe_ratio': sharpe,
-            'max_drawdown_pct': max_drawdown,
+            'total_return': total_return,
+            'sortino_ratio': sortino_ratio,
+            'max_drawdown': max_drawdown,
             'win_rate': win_rate,
             'profit_factor': profit_factor,
             'total_trades': len(self.closed_trades),
@@ -439,12 +445,12 @@ def simulate_paper_trading():
 
     # Get final performance
     metrics = engine.get_performance_metrics()
-    print("
-📊 Final Performance:"    print(".1%")
-    print(".2f")
-    print(".1%")
-    print(".1%")
-    print(".2f")
+    print("\n📊 Final Performance:")
+    print(f"   Total Return: {metrics['total_return']:.1%}")
+    print(f"   Sortino Ratio: {metrics['sortino_ratio']:.2f}")
+    print(f"   Win Rate: {metrics['win_rate']:.1%}")
+    print(f"   Max Drawdown: {metrics['max_drawdown']:.1%}")
+    print(f"   Profit Factor: {metrics['profit_factor']:.2f}")
     print(f"   Total Trades: {metrics['total_trades']}")
 
     # Save session data
@@ -566,14 +572,14 @@ def main():
     if choice == "1":
         # Quick simulation
         metrics = simulate_paper_trading()
-        print("
-✅ Quick paper trading simulation completed!"        print("📈 Use this data to validate strategy performance before live trading"
+        print("\n✅ Quick paper trading simulation completed!")
+        print("📈 Use this data to validate strategy performance before live trading")
     elif choice == "2":
         # Live validation
         try:
             metrics = asyncio.run(run_live_paper_trading())
-            print("
-✅ Live paper trading validation completed!"            print("🚀 Ready to proceed with profit maximization strategy"
+            print("\n✅ Live paper trading validation completed!")
+            print("🚀 Ready to proceed with profit maximization strategy")
         except Exception as e:
             print(f"\n❌ Live validation failed: {e}")
             print("💡 Run the quick simulation first to validate basic functionality")

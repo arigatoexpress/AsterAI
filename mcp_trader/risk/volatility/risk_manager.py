@@ -33,7 +33,7 @@ class RiskMetrics:
     portfolio_value: float = 0.0
     daily_pnl: float = 0.0
     max_drawdown: float = 0.0
-    sharpe_ratio: float = 0.0
+    sortino_ratio: float = 0.0  # Sortino ratio (downside risk focus)
     volatility: float = 0.0
     concentration_ratio: float = 0.0  # Largest position / total portfolio
     correlation_risk: float = 0.0
@@ -319,7 +319,7 @@ class VolatilityRiskManager:
                 'daily_pnl': self.risk_metrics.daily_pnl,
                 'max_drawdown': self.risk_metrics.max_drawdown,
                 'concentration_ratio': self.risk_metrics.concentration_ratio,
-                'sharpe_ratio': self.risk_metrics.sharpe_ratio,
+                'sortino_ratio': self.risk_metrics.sortino_ratio,
                 'volatility': self.risk_metrics.volatility
             },
             'risk_limits': {

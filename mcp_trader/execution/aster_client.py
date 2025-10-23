@@ -208,6 +208,19 @@ class AsterConfig:
     max_connections: int = 100  # Max connections for connector
     max_connections_per_host: int = 10  # Max connections per host
 
+    def __post_init__(self):
+        """Validate configuration after initialization."""
+        if not self.api_key or not self.api_key.strip():
+            raise ValueError("API key cannot be empty")
+        if not self.secret_key or not self.secret_key.strip():
+            raise ValueError("Secret key cannot be empty")
+        if not self.base_url or not self.base_url.strip():
+            raise ValueError("Base URL cannot be empty")
+        if self.timeout <= 0:
+            raise ValueError("Timeout must be positive")
+        if self.max_retries < 0:
+            raise ValueError("Max retries cannot be negative")
+
 
 @dataclass
 class OrderRequest:

@@ -61,7 +61,7 @@ class TradingMetrics(BaseModel):
     losing_trades: int
     win_rate: float
     profit_factor: float
-    sharpe_ratio: float
+    sortino_ratio: float
     max_drawdown: float
     current_balance: float
     timestamp: datetime
@@ -185,7 +185,7 @@ class MonitoringDashboard:
                 losing_trades=np.random.randint(0, 50),
                 win_rate=np.random.uniform(0.4, 0.8),
                 profit_factor=np.random.uniform(0.8, 2.0),
-                sharpe_ratio=np.random.uniform(0.5, 2.0),
+                sortino_ratio=np.random.uniform(0.5, 2.0),
                 max_drawdown=np.random.uniform(0.0, 0.1),
                 current_balance=100.0 + np.random.normal(0, 20),
                 timestamp=datetime.now()

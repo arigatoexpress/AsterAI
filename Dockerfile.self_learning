@@ -27,6 +27,7 @@ RUN pip install --no-cache-dir \
     websockets==11.0.3
 
 # Copy application code
+COPY simple_self_learning_server.py .
 COPY self_learning_trader.py .
 COPY self_learning_server.py .
 COPY mcp_trader/ ./mcp_trader/
@@ -34,7 +35,7 @@ COPY live_trading_agent.py .
 COPY trading_server.py .
 
 # Verify files exist
-RUN ls -la self_learning_server.py self_learning_trader.py
+RUN ls -la simple_self_learning_server.py
 
 # Create necessary directories
 RUN mkdir -p /app/logs /app/models /app/data
@@ -56,4 +57,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 EXPOSE 8000
 
 # Default command
-CMD ["python", "self_learning_server.py"]
+CMD ["python", "simple_self_learning_server.py"]

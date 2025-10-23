@@ -16,6 +16,10 @@ from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+# Set up logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
 try:
     from self_learning_trader import SelfLearningTrader, TradingConfig
     _self_learning_available = True
@@ -27,10 +31,6 @@ except ImportError as e:
     from live_trading_agent import LiveTradingAgent, TradingConfig as BasicTradingConfig
     logger.info("Using fallback basic trading agent")
 
-# Set up logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
 # Initialize FastAPI app
 app = FastAPI(title="Self-Learning Trading Bot", version="2.0.0")
 
@@ -38,6 +38,254 @@ app = FastAPI(title="Self-Learning Trading Bot", version="2.0.0")
 trading_bot = None
 is_running = False
 performance_data = []
+
+# Cloud Service Controller
+cloud_controller = None
+
+def initialize_cloud_controller():
+    """Initialize the cloud service controller"""
+    global cloud_controller
+    try:
+        # Import the CloudServiceController directly
+        import sys
+        import os
+        sys.path.append(os.path.join(os.path.dirname(__file__), 'scripts'))
+
+        # Copy the CloudServiceController class inline
+        class CloudServiceController:
+            """Controller for cloud trading services"""
+
+            def __init__(self):
+                # GCP Project details
+                self.project_id = "quant-ai-trader-credits"
+                self.region = "us-central1"
+                self.project_num = "880429861698"
+
+                # Service URLs
+                self.services = {
+                    "aster-trading-agent": f"https://aster-trading-agent-{self.project_num}.{self.region}.run.app",
+                    "aster-self-learning-trader": f"https://aster-self-learning-trader-{self.project_num}.{self.region}.run.app",
+                    "aster-enhanced-dashboard": f"https://aster-enhanced-dashboard-{self.project_num}.{self.region}.run.app"
+                }
+
+            def check_service_status(self, service_name: str):
+                """Check status of a service"""
+                try:
+                    import urllib.request
+                    import json
+                    url = f"{self.services[service_name]}/status"
+                    with urllib.request.urlopen(url, timeout=10) as response:
+                        if response.status == 200:
+                            data = response.read().decode('utf-8')
+                            return json.loads(data)
+                        else:
+                            return {"status": "error", "error": f"HTTP {response.status}"}
+                except Exception as e:
+                    print(f"Error checking {service_name} status: {e}")
+                    return {"status": "error", "error": str(e)}
+
+            def start_service(self, service_name: str):
+                """Start a trading service"""
+                try:
+                    import urllib.request
+                    import json
+                    url = f"{self.services[service_name]}/start"
+                    req = urllib.request.Request(url, method='POST')
+                    with urllib.request.urlopen(req, timeout=30) as response:
+                        if response.status == 200:
+                            data = response.read().decode('utf-8')
+                            result = json.loads(data) if data else {}
+                            return {"status": "success", "message": f"{service_name} started", **result}
+                        else:
+                            return {"status": "error", "error": f"HTTP {response.status}"}
+                except Exception as e:
+                    print(f"Error starting {service_name}: {e}")
+                    return {"status": "error", "error": str(e)}
+
+            def stop_service(self, service_name: str):
+                """Stop a trading service"""
+                try:
+                    import urllib.request
+                    import json
+                    url = f"{self.services[service_name]}/stop"
+                    req = urllib.request.Request(url, method='POST')
+                    with urllib.request.urlopen(req, timeout=30) as response:
+                        if response.status == 200:
+                            data = response.read().decode('utf-8')
+                            result = json.loads(data) if data else {}
+                            return {"status": "success", "message": f"{service_name} stopped", **result}
+                        else:
+                            return {"status": "error", "error": f"HTTP {response.status}"}
+                except Exception as e:
+                    print(f"Error stopping {service_name}: {e}")
+                    return {"status": "error", "error": str(e)}
+
+            def get_service_performance(self, service_name: str):
+                """Get performance data from a service"""
+                try:
+                    import urllib.request
+                    import json
+                    url = f"{self.services[service_name]}/performance"
+                    with urllib.request.urlopen(url, timeout=10) as response:
+                        if response.status == 200:
+                            data = response.read().decode('utf-8')
+                            return json.loads(data)
+                        else:
+                            return {"status": "error", "error": f"HTTP {response.status}"}
+                except Exception as e:
+                    print(f"Error getting {service_name} performance: {e}")
+                    return {"status": "error", "error": str(e)}
+
+            def get_service_positions(self, service_name: str):
+                """Get positions data from a service"""
+                try:
+                    import urllib.request
+                    import json
+                    url = f"{self.services[service_name]}/positions"
+                    with urllib.request.urlopen(url, timeout=10) as response:
+                        if response.status == 200:
+                            data = response.read().decode('utf-8')
+                            return json.loads(data)
+                        else:
+                            return {"status": "error", "error": f"HTTP {response.status}"}
+                except Exception as e:
+                    print(f"Error getting {service_name} positions: {e}")
+                    return {"status": "error", "error": str(e)}
+
+            def get_combined_status(self):
+                """Get combined status from all trading services"""
+                try:
+                    # Simple status check - just try to connect to the health endpoints
+                    import urllib.request
+                    import json
+
+                    trading_status = {"status": "unknown"}
+                    self_learning_status = {"status": "unknown"}
+
+                    # Check trading agent
+                    try:
+                        with urllib.request.urlopen(f"{self.services['aster-trading-agent']}/status", timeout=5) as response:
+                            if response.status == 200:
+                                data = json.loads(response.read().decode('utf-8'))
+                                trading_status = {"status": "running" if data.get("status") == "running" else "stopped"}
+                    except Exception as e:
+                        trading_status = {"status": "error", "error": str(e)}
+
+                    # Check self-learning trader (currently having issues)
+                    self_learning_status = {"status": "disabled", "message": "Service temporarily disabled due to container issues"}
+
+                    # Determine overall status
+                    if trading_status.get("status") == "running":
+                        overall_status = "running"
+                    else:
+                        overall_status = "stopped"
+
+                except Exception as e:
+                    print(f"Error in get_combined_status: {e}")
+                    overall_status = "error"
+                    trading_status = {"status": "error", "error": str(e)}
+                    self_learning_status = {"status": "error", "error": str(e)}
+
+                return {
+                    "service": "Self-Learning Trading Bot",
+                    "version": "2.0.0",
+                    "status": overall_status,
+                    "features": [
+                        "Self-learning ML models",
+                        "Aggressive perpetual trading",
+                        "Multiple trading strategies",
+                        "Real-time adaptation",
+                        "Risk management"
+                    ],
+                    "endpoints": {
+                        "health": "/health",
+                        "status": "/status",
+                        "performance": "/performance",
+                        "positions": "/positions",
+                        "market_data": "/market-data",
+                        "strategy_weights": "/strategy-weights",
+                        "learning_status": "/learning-status",
+                        "start": "POST /start",
+                        "stop": "POST /stop",
+                        "manual_trade": "POST /manual-trade"
+                    },
+                    "services": {
+                        "aster_trading_agent": trading_status,
+                        "aster_self_learning_trader": self_learning_status
+                    }
+                }
+
+            def start_all_trading(self):
+                """Start all trading services"""
+                results = {}
+
+                # Start main trading agent
+                print("Starting aster-trading-agent...")
+                results["aster_trading_agent"] = self.start_service("aster-trading-agent")
+
+                # Start self-learning trader
+                print("Starting aster-self-learning-trader...")
+                results["aster_self_learning_trader"] = self.start_service("aster-self-learning-trader")
+
+                return {
+                    "status": "completed",
+                    "results": results,
+                    "message": "Trading services start initiated"
+                }
+
+            def stop_all_trading(self):
+                """Stop all trading services"""
+                results = {}
+
+                # Stop main trading agent
+                print("Stopping aster-trading-agent...")
+                results["aster_trading_agent"] = self.stop_service("aster-trading-agent")
+
+                # Stop self-learning trader
+                print("Stopping aster-self-learning-trader...")
+                results["aster_self_learning_trader"] = self.stop_service("aster-self-learning-trader")
+
+                return {
+                    "status": "completed",
+                    "results": results,
+                    "message": "Trading services stop initiated"
+                }
+
+            def get_combined_performance(self):
+                """Get combined performance from all services"""
+                trading_perf = self.get_service_performance("aster-trading-agent")
+                self_learning_perf = self.get_service_performance("aster-self-learning-trader")
+
+                # Combine performance data
+                combined = {
+                    "trading_agent": trading_perf,
+                    "self_learning_trader": self_learning_perf,
+                    "combined_metrics": {}
+                }
+
+                # Calculate combined metrics if both have data
+                if (trading_perf.get("status") != "error" and
+                    self_learning_perf.get("status") != "error"):
+
+                    # Simple combination - you can make this more sophisticated
+                    combined["combined_metrics"] = {
+                        "total_pnl": (trading_perf.get("total_pnl", 0) +
+                                    self_learning_perf.get("total_pnl", 0)),
+                        "total_trades": (trading_perf.get("total_trades", 0) +
+                                       self_learning_perf.get("total_trades", 0))
+                    }
+
+                return combined
+
+        cloud_controller = CloudServiceController()
+        logger.info("Cloud service controller initialized")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to initialize cloud controller: {e}")
+        return False
+
+# Initialize cloud controller on startup
+initialize_cloud_controller()
 
 class TradeRequest(BaseModel):
     symbol: str
@@ -62,8 +310,26 @@ async def health_check():
         "timestamp": datetime.now().isoformat(),
         "service": "self-learning-trading-bot",
         "running": is_running,
-        "version": "2.0.0"
+        "version": "2.0.0",
+        "cloud_controller": cloud_controller is not None
     }
+
+@app.get("/test-cloud")
+async def test_cloud():
+    """Test cloud controller functionality"""
+    if not cloud_controller:
+        return {"error": "Cloud controller not initialized"}
+
+    try:
+        # Test checking status
+        status = cloud_controller.check_service_status("aster-trading-agent")
+        return {
+            "cloud_controller": "initialized",
+            "test_status": status,
+            "trading_agent_url": cloud_controller.services.get("aster-trading-agent")
+        }
+    except Exception as e:
+        return {"error": str(e)}
 
 @app.get("/status")
 async def get_status():
@@ -83,9 +349,17 @@ async def get_status():
 @app.get("/performance")
 async def get_performance():
     """Get detailed performance metrics"""
+    if cloud_controller:
+        try:
+            perf_data = cloud_controller.get_combined_performance()
+            return perf_data
+        except Exception as e:
+            logger.error(f"Failed to get cloud performance: {e}")
+
+    # Fallback to local implementation
     if not trading_bot:
         raise HTTPException(status_code=404, detail="Trading bot not initialized")
-    
+
     metrics = trading_bot.performance_metrics
     return PerformanceMetrics(
         total_trades=metrics['total_trades'],
@@ -100,6 +374,21 @@ async def get_performance():
 @app.get("/positions")
 async def get_positions():
     """Get current positions"""
+    if cloud_controller:
+        try:
+            # Get positions from both services
+            trading_positions = cloud_controller.get_service_positions("aster-trading-agent")
+            self_learning_positions = cloud_controller.get_service_positions("aster-self-learning-trader")
+
+            combined = {
+                "trading_agent": trading_positions,
+                "self_learning_trader": self_learning_positions
+            }
+            return combined
+        except Exception as e:
+            logger.error(f"Failed to get cloud positions: {e}")
+
+    # Fallback to local implementation
     if not trading_bot:
         return []
     
@@ -208,9 +497,23 @@ async def test_api_connectivity():
 
 @app.post("/start")
 async def start_trading():
-    """Start the self-learning trading bot"""
+    """Start the trading services"""
+    if cloud_controller:
+        try:
+            result = cloud_controller.start_all_trading()
+            logger.info("Trading services start initiated via cloud controller")
+            return {
+                "status": "started",
+                "message": "Cloud trading services start initiated",
+                "details": result
+            }
+        except Exception as e:
+            logger.error(f"Failed to start via cloud controller: {e}")
+            return {"status": "error", "message": f"Cloud controller error: {str(e)}"}
+
+    # Fallback to local implementation
     global is_running, trading_bot
-    
+
     if is_running:
         return {"status": "already_running"}
     
@@ -291,9 +594,23 @@ async def start_trading():
 
 @app.post("/stop")
 async def stop_trading():
-    """Stop the trading bot"""
+    """Stop the trading services"""
+    if cloud_controller:
+        try:
+            result = cloud_controller.stop_all_trading()
+            logger.info("Trading services stop initiated via cloud controller")
+            return {
+                "status": "stopped",
+                "message": "Cloud trading services stop initiated",
+                "details": result
+            }
+        except Exception as e:
+            logger.error(f"Failed to stop via cloud controller: {e}")
+            return {"status": "error", "message": f"Cloud controller error: {str(e)}"}
+
+    # Fallback to local implementation
     global is_running, trading_bot
-    
+
     if not is_running:
         return {"status": "not_running"}
     
@@ -362,6 +679,22 @@ async def get_learning_status():
 @app.get("/")
 async def root():
     """Root endpoint with basic info"""
+    print(f"Cloud controller initialized: {cloud_controller is not None}")
+
+    if cloud_controller:
+        # Get real status from cloud services
+        try:
+            print("Getting combined status from cloud services...")
+            status_info = cloud_controller.get_combined_status()
+            print(f"Status info: {status_info}")
+            return status_info
+        except Exception as e:
+            print(f"Failed to get cloud status: {e}")
+            logger.error(f"Failed to get cloud status: {e}")
+            # Fallback to local status
+
+    # Fallback response
+    print("Using fallback response")
     return {
         "service": "Self-Learning Trading Bot",
         "version": "2.0.0",

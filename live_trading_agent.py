@@ -128,7 +128,7 @@ class TradingMetrics:
     max_drawdown: float = 0.0
     win_rate: float = 0.0
     profit_factor: float = 0.0
-    sharpe_ratio: float = 0.0
+    sortino_ratio: float = 0.0
     last_updated: datetime = None
     
     def __post_init__(self):
@@ -458,18 +458,39 @@ class LiveTradingAgent:
             # Skip strategies that do not implement the expected interface
             if not hasattr(strategy, 'generate_signal'):
                 return None
+
+            # Check if klines data exists and is not empty
+            klines_data = market_data.get('klines', [])
+            if not klines_data or len(klines_data) == 0:
+                logger.warning(f"No klines data available for {symbol}, skipping signal generation")
+                return None
+
             # Convert market data to DataFrame for strategy
-            klines_df = pd.DataFrame(market_data['klines'], columns=[
+            klines_df = pd.DataFrame(klines_data, columns=[
                 'timestamp', 'open', 'high', 'low', 'close', 'volume', 'close_time',
                 'quote_volume', 'trades', 'taker_buy_base', 'taker_buy_quote', 'ignore'
             ])
-            
+
+            # Check if DataFrame is empty after conversion
+            if klines_df.empty:
+                logger.warning(f"Empty klines DataFrame for {symbol}, skipping signal generation")
+                return None
+
             # Convert to numeric
             for col in ['open', 'high', 'low', 'close', 'volume']:
-                klines_df[col] = pd.to_numeric(klines_df[col])
-            
-            # Generate signal
-            signal = strategy.generate_signal(klines_df.iloc[-1])
+                klines_df[col] = pd.to_numeric(klines_df[col], errors='coerce')
+
+            # Check if we have enough data
+            if len(klines_df) == 0:
+                logger.warning(f"No valid klines data for {symbol} after numeric conversion")
+                return None
+
+            # Generate signal from the most recent data point
+            try:
+                signal = strategy.generate_signal(klines_df.iloc[-1])
+            except Exception as e:
+                logger.error(f"Error generating signal for {symbol} with strategy {strategy.__class__.__name__}: {e}")
+                return None
             
             if signal != 0:  # Non-zero signal
                 confidence = 0.8

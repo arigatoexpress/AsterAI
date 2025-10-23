@@ -23,7 +23,7 @@ class RiskMetrics:
     portfolio_value: float
     total_risk: float  # As percentage of portfolio
     max_drawdown: float
-    sharpe_ratio: float
+    sortino_ratio: float  # Sortino ratio (downside risk focus)
     volatility: float
     var_95: float  # Value at Risk 95%
     expected_shortfall: float
@@ -95,7 +95,7 @@ class RiskManager:
 
             # Volatility and risk metrics
             volatility = self._calculate_portfolio_volatility(daily_returns)
-            sharpe_ratio = self._calculate_sharpe_ratio(daily_returns)
+            sortino_ratio = self._calculate_sortino_ratio(daily_returns)
             max_drawdown = self._calculate_max_drawdown(portfolio_value)
             var_95 = self._calculate_var_95(daily_returns)
             expected_shortfall = self._calculate_expected_shortfall(daily_returns)
@@ -112,7 +112,7 @@ class RiskManager:
                 portfolio_value=portfolio_value,
                 total_risk=total_risk,
                 max_drawdown=max_drawdown,
-                sharpe_ratio=sharpe_ratio,
+                sortino_ratio=sortino_ratio,
                 volatility=volatility,
                 var_95=var_95,
                 expected_shortfall=expected_shortfall,
@@ -140,7 +140,7 @@ class RiskManager:
                 portfolio_value=portfolio_state.total_balance,
                 total_risk=self.max_portfolio_risk,
                 max_drawdown=0.0,
-                sharpe_ratio=0.0,
+                sortino_ratio=0.0,
                 volatility=0.05,
                 var_95=0.05,
                 expected_shortfall=0.07,
@@ -386,20 +386,27 @@ class RiskManager:
 
         return np.std(returns) * np.sqrt(365)
 
-    def _calculate_sharpe_ratio(self, returns: List[float]) -> float:
-        """Calculate Sharpe ratio."""
+    def _calculate_sortino_ratio(self, returns: List[float]) -> float:
+        """Calculate Sortino ratio (downside deviation focus)."""
         if len(returns) < 2:
             return 0.0
 
+        # Filter for negative returns only (downside deviation)
+        negative_returns = [r for r in returns if r < 0]
+        if not negative_returns:
+            # No downside risk - return high positive value if positive returns
+            avg_return = np.mean(returns)
+            return float('inf') if avg_return > 0 else 0.0
+
+        downside_volatility = np.std(negative_returns) if len(negative_returns) > 1 else 0
+
+        if downside_volatility == 0:
+            return float('inf')
+
         avg_return = np.mean(returns)
-        volatility = np.std(returns)
-
-        if volatility == 0:
-            return 0.0
-
         # Assuming 3% risk-free rate, annualized
         risk_free_rate = 0.03
-        return (avg_return - risk_free_rate/365) / volatility * np.sqrt(365)
+        return (avg_return - risk_free_rate/365) / downside_volatility * np.sqrt(365)
 
     def _calculate_max_drawdown(self, current_value: float) -> float:
         """Calculate maximum drawdown from peak."""
@@ -509,7 +516,7 @@ class RiskManager:
             'portfolio_value': metrics.portfolio_value,
             'total_risk': metrics.total_risk,
             'max_drawdown': metrics.max_drawdown,
-            'sharpe_ratio': metrics.sharpe_ratio,
+            'sortino_ratio': metrics.sortino_ratio,
             'volatility': metrics.volatility,
             'var_95': metrics.var_95,
             'expected_shortfall': metrics.expected_shortfall,
